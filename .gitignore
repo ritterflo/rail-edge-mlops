@@ -33,3 +33,7 @@ __pycache__/
 
 # Local service state
 /infra/volumes/
+
+# HuggingFace download cache; the checkpoint is pinned by revision in
+# params.yaml, so this is a cache, not an input.
+/.cache/
