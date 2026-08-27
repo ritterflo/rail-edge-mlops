@@ -79,6 +79,8 @@ accuracy drop.
 
 ## Notes on choices
 
+Fuller reasoning, including what each choice gave up: [docs/decisions.md](docs/decisions.md).
+
 **Apache-2.0, and the model follows from it.** The detector is RT-DETRv2 (Apache-2.0) rather than a
 YOLO variant, so this repository can stay permissively licensed — Ultralytics' AGPL-3.0 would
 otherwise propagate here. RT-DETR was also designed against TensorRT, which suits the deployment
