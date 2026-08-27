@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+*.pem
+*.key
+
+# Data — tracked by DVC, never by git
+/data/**
+!/data/.gitkeep
+!/data/**/*.dvc
+!/data/**/.gitignore
+
+# Experiment + model artifacts
+/mlruns/
+/outputs/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.plan
+
+# Local service state
+/infra/volumes/
