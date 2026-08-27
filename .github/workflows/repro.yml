@@ -1,0 +1,27 @@
+name: Reproducibility
+
+# Deliberately NOT on push: this needs the MinIO/MLflow stack running and re-runs the
+# whole data pipeline, so it belongs in the integration lane rather than the hermetic
+# one. Weekly plus on demand.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  check-repro:
+    runs-on: [self-hosted, rocm]
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build training image
+        run: make image
+
+      # Pulls the raw data, re-runs every stage from scratch, and fails if the
+      # regenerated dvc.lock differs from the committed one -- catching both
+      # nondeterminism and a script changed without regenerating the lock.
+      - name: Determinism gate
+        run: make check-repro

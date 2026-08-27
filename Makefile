@@ -95,10 +95,14 @@ check-services: image  ## Integration check -- requires `make services-up` first
 # Joins the compose network because MinIO is bound to loopback on the host and
 # is therefore unreachable from a bridge-network container. Credentials come
 # from .env; .dvc/config holds only the bucket and endpoint, never secrets.
+# Credentials come from .env locally, or from the environment in CI (where .env is
+# absent because it is gitignored). The bare `-e VAR` form passes a variable through
+# from the calling environment, so both paths work without a second code path.
 DVC_RUN := docker run --rm \
 	--network rail-edge_default \
 	--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
-	--env-file .env \
+	$(if $(wildcard .env),--env-file .env,) \
+	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
 	-v $(PWD):/workspace -w /workspace $(IMAGE)
 
 .PHONY: dvc data-push data-pull
