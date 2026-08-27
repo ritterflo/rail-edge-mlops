@@ -1,0 +1,173 @@
+{
+  "shift": {
+    "class_share_delta_pp": {
+      "barrier": -7.59,
+      "bicycle": -2.22,
+      "bus": -0.13,
+      "car": 16.47,
+      "construction_vehicle": -0.28,
+      "motorcycle": -2.58,
+      "pedestrian": -11.15,
+      "traffic_cone": 2.94,
+      "trailer": 1.54,
+      "truck": 2.99
+    },
+    "total_variation_pct": 23.95
+  },
+  "splits": {
+    "test": {
+      "box_scale_pct": {
+        "large": 2.44,
+        "medium": 16.73,
+        "small": 48.41,
+        "tiny": 32.42
+      },
+      "boxes_per_image": 11.08,
+      "capture_hour_images": {
+        "10": 1910,
+        "11": 1986,
+        "12": 1297,
+        "13": 679,
+        "14": 3087,
+        "15": 5248,
+        "16": 1763,
+        "17": 273,
+        "21": 2389,
+        "9": 912
+      },
+      "class_counts": {
+        "barrier": 16063,
+        "bicycle": 2290,
+        "bus": 2571,
+        "car": 103982,
+        "construction_vehicle": 1475,
+        "motorcycle": 1445,
+        "pedestrian": 37366,
+        "traffic_cone": 31863,
+        "trailer": 3469,
+        "truck": 15957
+      },
+      "class_share_pct": {
+        "barrier": 7.42,
+        "bicycle": 1.06,
+        "bus": 1.19,
+        "car": 48.03,
+        "construction_vehicle": 0.68,
+        "motorcycle": 0.67,
+        "pedestrian": 17.26,
+        "traffic_cone": 14.72,
+        "trailer": 1.6,
+        "truck": 7.37
+      },
+      "images_without_boxes": 1012,
+      "location_images": {
+        "boston-seaport": 19544
+      },
+      "n_boxes": 216481,
+      "n_images": 19544
+    },
+    "train": {
+      "box_scale_pct": {
+        "large": 1.51,
+        "medium": 13.13,
+        "small": 46.63,
+        "tiny": 38.73
+      },
+      "boxes_per_image": 7.38,
+      "capture_hour_images": {
+        "10": 3576,
+        "11": 11263,
+        "12": 3870,
+        "13": 2327,
+        "14": 9086,
+        "15": 8240,
+        "16": 8249,
+        "17": 1550,
+        "19": 670,
+        "20": 192
+      },
+      "class_counts": {
+        "barrier": 54321,
+        "bicycle": 11873,
+        "bus": 4786,
+        "car": 114238,
+        "construction_vehicle": 3480,
+        "motorcycle": 11754,
+        "pedestrian": 102819,
+        "traffic_cone": 42632,
+        "trailer": 212,
+        "truck": 15857
+      },
+      "class_share_pct": {
+        "barrier": 15.01,
+        "bicycle": 3.28,
+        "bus": 1.32,
+        "car": 31.56,
+        "construction_vehicle": 0.96,
+        "motorcycle": 3.25,
+        "pedestrian": 28.41,
+        "traffic_cone": 11.78,
+        "trailer": 0.06,
+        "truck": 4.38
+      },
+      "images_without_boxes": 5557,
+      "location_images": {
+        "singapore-onenorth": 48478,
+        "singapore-queenstown": 545
+      },
+      "n_boxes": 361972,
+      "n_images": 49023
+    },
+    "val": {
+      "box_scale_pct": {
+        "large": 1.51,
+        "medium": 13.39,
+        "small": 46.76,
+        "tiny": 38.33
+      },
+      "boxes_per_image": 6.75,
+      "capture_hour_images": {
+        "10": 2436,
+        "11": 1373,
+        "12": 683,
+        "13": 568,
+        "14": 3091,
+        "15": 2171,
+        "16": 2619,
+        "17": 920,
+        "20": 1296
+      },
+      "class_counts": {
+        "barrier": 18161,
+        "bicycle": 2897,
+        "bus": 1269,
+        "car": 31868,
+        "construction_vehicle": 1116,
+        "motorcycle": 3580,
+        "pedestrian": 25716,
+        "traffic_cone": 13108,
+        "trailer": 90,
+        "truck": 4500
+      },
+      "class_share_pct": {
+        "barrier": 17.75,
+        "bicycle": 2.83,
+        "bus": 1.24,
+        "car": 31.15,
+        "construction_vehicle": 1.09,
+        "motorcycle": 3.5,
+        "pedestrian": 25.14,
+        "traffic_cone": 12.81,
+        "trailer": 0.09,
+        "truck": 4.4
+      },
+      "images_without_boxes": 2094,
+      "location_images": {
+        "singapore-onenorth": 14795,
+        "singapore-queenstown": 362
+      },
+      "n_boxes": 102305,
+      "n_images": 15157
+    }
+  }
+}

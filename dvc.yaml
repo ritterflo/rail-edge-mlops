@@ -54,3 +54,24 @@ stages:
       - split
     outs:
       - data/processed/splits
+
+  # Emitted as a metric with cache:false, so the report lives in git rather than
+  # MinIO. `git diff` then shows how a split-policy change changed the dataset, and
+  # `dvc metrics diff` compares across commits without re-running an analysis by hand.
+  report:
+    cmd: >-
+      python3 -m rail_edge_mlops.data.report
+      --splits-dir data/processed/splits
+      --provenance data/processed/provenance.json
+      --out-json reports/dataset.json
+      --out-md reports/dataset.md
+    deps:
+      - data/processed/splits
+      - data/processed/provenance.json
+      - src/rail_edge_mlops/data/report.py
+    metrics:
+      - reports/dataset.json:
+          cache: false
+    outs:
+      - reports/dataset.md:
+          cache: false

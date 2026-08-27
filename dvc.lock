@@ -81,3 +81,30 @@ stages:
       md5: 83407aed1e04c026a84fb7f55a0dab54.dir
       size: 88209524
       nfiles: 4
+  report:
+    cmd: python3 -m rail_edge_mlops.data.report --splits-dir 
+      data/processed/splits --provenance data/processed/provenance.json 
+      --out-json reports/dataset.json --out-md reports/dataset.md
+    deps:
+    - path: data/processed/provenance.json
+      hash: md5
+      md5: 3e19f94ba9538089d5c3e5d66e2db7b2
+      size: 20675174
+    - path: data/processed/splits
+      hash: md5
+      md5: 83407aed1e04c026a84fb7f55a0dab54.dir
+      size: 88209524
+      nfiles: 4
+    - path: src/rail_edge_mlops/data/report.py
+      hash: md5
+      md5: ea9154917a41b4a17c9fa594c10b978a
+      size: 6741
+    outs:
+    - path: reports/dataset.json
+      hash: md5
+      md5: e2ca65d64974ebd5316d1b6200037e07
+      size: 3940
+    - path: reports/dataset.md
+      hash: md5
+      md5: 2f0428513f03dfeb5113d3be655ba778
+      size: 1313
