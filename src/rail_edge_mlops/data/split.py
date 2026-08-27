@@ -27,7 +27,14 @@ from pathlib import Path
 import yaml
 
 
-def build_split(coco: dict, provenance: dict, test_location: str, val_fraction: float, seed: int):
+def build_split(
+    coco: dict,
+    provenance: dict,
+    test_location: str,
+    val_fraction: float,
+    seed: int,
+    subsample_logs: int | None = None,
+):
     by_log: dict[str, list[int]] = defaultdict(list)
     log_location: dict[str, str] = {}
     for image_id_str, prov in provenance.items():
@@ -40,6 +47,13 @@ def build_split(coco: dict, provenance: dict, test_location: str, val_fraction: 
     # Deterministic: same seed and same log set always yield the same partition.
     rng = random.Random(seed)
     rng.shuffle(train_pool)
+
+    # Iteration knob. Sampling logs rather than images keeps every frame from a given
+    # drive on one side of the boundary; sampling images would reintroduce exactly the
+    # leakage the log grouping exists to prevent. The test location is never
+    # subsampled -- a held-out set that shrinks with a convenience flag is not one.
+    if subsample_logs is not None:
+        train_pool = train_pool[:subsample_logs]
     n_val = max(1, round(len(train_pool) * val_fraction)) if train_pool else 0
     val_logs, train_logs = sorted(train_pool[:n_val]), sorted(train_pool[n_val:])
 
@@ -66,7 +80,12 @@ def main() -> int:
     id_to_name = {c["id"]: c["name"] for c in coco["categories"]}
 
     logs_by_split, by_log, log_location = build_split(
-        coco, provenance, params["test_location"], params["val_fraction"], params["seed"]
+        coco,
+        provenance,
+        params["test_location"],
+        params["val_fraction"],
+        params["seed"],
+        params.get("subsample_logs"),
     )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)

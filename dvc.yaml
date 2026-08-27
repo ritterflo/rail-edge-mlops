@@ -1,24 +1,38 @@
 stages:
-  # Extracts only the annotated keyframes and metadata. The archive also holds ~106MB
-  # of unannotated `sweeps/` context frames, which nothing downstream reads -- caching
-  # them would double the storage for no gain.
+  # Extracts only what the converter reads. The metadata archive also carries
+  # surface_ann.json (segmentation surfaces) and ego_pose.json, together ~775MB per
+  # split that nothing downstream touches; the samples archive is images only.
+  # v1.0-test is deliberately absent: its annotations are withheld (0 object_ann
+  # records), so it is unusable for training or evaluation.
   extract:
     cmd: >-
-      mkdir -p data/interim/nuimages-mini &&
-      tar xzf data/raw/nuimages-v1.0-mini.tgz -C data/interim/nuimages-mini v1.0-mini samples
+      mkdir -p data/interim/nuimages &&
+      tar xzf data/raw/nuimages-v1.0-all-metadata.tgz -C data/interim/nuimages
+      v1.0-train/sample.json v1.0-train/sample_data.json v1.0-train/object_ann.json
+      v1.0-train/log.json v1.0-train/category.json
+      v1.0-val/sample.json v1.0-val/sample_data.json v1.0-val/object_ann.json
+      v1.0-val/log.json v1.0-val/category.json &&
+      tar xzf data/raw/nuimages-v1.0-all-samples.tgz -C data/interim/nuimages samples
     deps:
-      - data/raw/nuimages-v1.0-mini.tgz
+      - data/raw/nuimages-v1.0-all-metadata.tgz
+      - data/raw/nuimages-v1.0-all-samples.tgz
     outs:
-      - data/interim/nuimages-mini
+      # push:false -- ~16GB that is a `tar xzf` away from the raw archives. Cached
+      # locally so DVC can detect drift, but never uploaded.
+      - data/interim/nuimages:
+          push: false
 
+  # nuImages' own train/val boundary is random; ours is by location. Merging them
+  # into one pool and re-splitting is what makes the held-out set a real
+  # distribution shift rather than a reshuffle.
   convert:
     cmd: >-
       python3 -m rail_edge_mlops.data.convert
-      --meta-dir data/interim/nuimages-mini/v1.0-mini
+      --meta-dirs data/interim/nuimages/v1.0-train data/interim/nuimages/v1.0-val
       --out data/processed/nuimages_coco.json
       --sidecar data/processed/provenance.json
     deps:
-      - data/interim/nuimages-mini
+      - data/interim/nuimages
       - src/rail_edge_mlops/data/convert.py
       - src/rail_edge_mlops/data/categories.py
     outs:

@@ -21,8 +21,18 @@ from rail_edge_mlops.data.categories import CLASS_TO_ID, DETECTION_CLASSES, NUIM
 LOGFILE_TS = re.compile(r"(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})([+-]\d{4})")
 
 
-def _load(root: Path, name: str) -> list[dict]:
-    return json.loads((root / f"{name}.json").read_text())
+def _load(roots: list[Path], name: str) -> list[dict]:
+    """Concatenate one table across several metadata directories.
+
+    nuImages splits its metadata into v1.0-train and v1.0-val, whose boundary is
+    random. We merge them and re-split by location instead, so the held-out set is a
+    genuine distribution shift. Tokens are UUIDs and unique across splits, so
+    concatenation cannot collide.
+    """
+    out: list[dict] = []
+    for root in roots:
+        out.extend(json.loads((root / f"{name}.json").read_text()))
+    return out
 
 
 def _local_hour(logfile: str) -> int | None:
@@ -32,12 +42,16 @@ def _local_hour(logfile: str) -> int | None:
     return int(m.group(4)) if m else None
 
 
-def convert(meta_dir: Path, out_path: Path, sidecar_path: Path) -> dict:
-    logs = {log["token"]: log for log in _load(meta_dir, "log")}
-    samples = _load(meta_dir, "sample")
-    sample_data = {sd["token"]: sd for sd in _load(meta_dir, "sample_data")}
-    categories = {c["token"]: c["name"] for c in _load(meta_dir, "category")}
-    object_anns = _load(meta_dir, "object_ann")
+def convert(meta_dirs: list[Path], out_path: Path, sidecar_path: Path) -> dict:
+    logs = {log["token"]: log for log in _load(meta_dirs, "log")}
+    samples = _load(meta_dirs, "sample")
+    # Only keyframes are ever annotated, and there are 13 sample_data records per
+    # sample. Filtering here keeps the lookup dict ~13x smaller on the full set.
+    sample_data = {
+        sd["token"]: sd for sd in _load(meta_dirs, "sample_data") if sd.get("is_key_frame", True)
+    }
+    categories = {c["token"]: c["name"] for c in _load(meta_dirs, "category")}
+    object_anns = _load(meta_dirs, "object_ann")
 
     images: list[dict] = []
     provenance: dict[str, dict] = {}
@@ -113,14 +127,15 @@ def convert(meta_dir: Path, out_path: Path, sidecar_path: Path) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--meta-dir", type=Path, required=True)
+    ap.add_argument("--meta-dirs", type=Path, nargs="+", required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--sidecar", type=Path, required=True)
     args = ap.parse_args()
 
-    stats = convert(args.meta_dir, args.out, args.sidecar)
+    stats = convert(args.meta_dirs, args.out, args.sidecar)
     total_kept = sum(stats["kept"].values())
     total_dropped = sum(stats["dropped"].values())
+    print(f"sources    : {', '.join(d.name for d in args.meta_dirs)}")
     print(f"images     : {stats['images']}")
     print(f"kept       : {total_kept} boxes across {len(stats['kept'])} classes")
     for name, n in sorted(stats["kept"].items(), key=lambda kv: -kv[1]):

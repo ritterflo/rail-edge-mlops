@@ -67,3 +67,19 @@ def test_every_mapping_target_is_a_known_class(source: str, target: str):
 def test_category_ids_are_stable_and_one_based():
     assert CLASS_TO_ID == {n: i + 1 for i, n in enumerate(DETECTION_CLASSES)}
     assert len(DETECTION_CLASSES) == 10
+
+
+def test_subsample_limits_training_logs_only():
+    """The held-out test location must not shrink when iterating quickly."""
+    prov = _provenance(n_logs=40)
+    full, _, _ = build_split({}, prov, "boston-seaport", 0.2, 42)
+    small, _, _ = build_split({}, prov, "boston-seaport", 0.2, 42, subsample_logs=6)
+    assert len(small["train"]) + len(small["val"]) == 6
+    assert small["test"] == full["test"], "subsampling must not touch the test split"
+
+
+def test_subsample_still_groups_by_log():
+    prov = _provenance(n_logs=40)
+    splits, _, _ = build_split({}, prov, "boston-seaport", 0.2, 42, subsample_logs=6)
+    seen = [t for logs in splits.values() for t in logs]
+    assert len(seen) == len(set(seen))

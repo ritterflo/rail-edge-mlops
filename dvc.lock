@@ -1,47 +1,55 @@
 schema: '2.0'
 stages:
   extract:
-    cmd: mkdir -p data/interim/nuimages-mini && tar xzf 
-      data/raw/nuimages-v1.0-mini.tgz -C data/interim/nuimages-mini v1.0-mini 
-      samples
+    cmd: mkdir -p data/interim/nuimages && tar xzf 
+      data/raw/nuimages-v1.0-all-metadata.tgz -C data/interim/nuimages 
+      v1.0-train/sample.json v1.0-train/sample_data.json 
+      v1.0-train/object_ann.json v1.0-train/log.json v1.0-train/category.json 
+      v1.0-val/sample.json v1.0-val/sample_data.json v1.0-val/object_ann.json 
+      v1.0-val/log.json v1.0-val/category.json && tar xzf 
+      data/raw/nuimages-v1.0-all-samples.tgz -C data/interim/nuimages samples
     deps:
-    - path: data/raw/nuimages-v1.0-mini.tgz
+    - path: data/raw/nuimages-v1.0-all-metadata.tgz
       hash: md5
-      md5: 2b4ff9756ec996d2b9d9d4e28197b2cf
-      size: 117873411
+      md5: ecf01672cb7b1cc92bb0528496d60465
+      size: 639386088
+    - path: data/raw/nuimages-v1.0-all-samples.tgz
+      hash: md5
+      md5: 283d520a8d6db5696c41452c4b231ffe
+      size: 16381401772
     outs:
-    - path: data/interim/nuimages-mini
+    - path: data/interim/nuimages
       hash: md5
-      md5: e86ef3ec185adac784943ff441a0c0c8.dir
-      size: 10259688
-      nfiles: 60
+      md5: 33e53e36a8f2cccfc4589126ec9895bf.dir
+      size: 17534605062
+      nfiles: 93486
   convert:
-    cmd: python3 -m rail_edge_mlops.data.convert --meta-dir 
-      data/interim/nuimages-mini/v1.0-mini --out 
+    cmd: python3 -m rail_edge_mlops.data.convert --meta-dirs 
+      data/interim/nuimages/v1.0-train data/interim/nuimages/v1.0-val --out 
       data/processed/nuimages_coco.json --sidecar data/processed/provenance.json
     deps:
-    - path: data/interim/nuimages-mini
+    - path: data/interim/nuimages
       hash: md5
-      md5: e86ef3ec185adac784943ff441a0c0c8.dir
-      size: 10259688
-      nfiles: 60
+      md5: 33e53e36a8f2cccfc4589126ec9895bf.dir
+      size: 17534605062
+      nfiles: 93486
     - path: src/rail_edge_mlops/data/categories.py
       hash: md5
       md5: 0b20b2e70f01d86e394a12496e616f9c
       size: 1629
     - path: src/rail_edge_mlops/data/convert.py
       hash: md5
-      md5: 95ee85df2a08c6ed5dd033d8a4350b59
-      size: 4958
+      md5: c21ae26f2f27628155072667f9a5e830
+      size: 5695
     outs:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: 4f07a17149b3fab1d7678eda8189ccc6
-      size: 60255
+      md5: bbd71aab02edfa65eab7b8a9b2a8ba23
+      size: 88187705
     - path: data/processed/provenance.json
       hash: md5
-      md5: 2270f29d674112c58999010d7048e872
-      size: 12192
+      md5: 3e19f94ba9538089d5c3e5d66e2db7b2
+      size: 20675174
   split:
     cmd: python3 -m rail_edge_mlops.data.split --coco 
       data/processed/nuimages_coco.json --provenance 
@@ -50,25 +58,26 @@ stages:
     deps:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: 4f07a17149b3fab1d7678eda8189ccc6
-      size: 60255
+      md5: bbd71aab02edfa65eab7b8a9b2a8ba23
+      size: 88187705
     - path: data/processed/provenance.json
       hash: md5
-      md5: 2270f29d674112c58999010d7048e872
-      size: 12192
+      md5: 3e19f94ba9538089d5c3e5d66e2db7b2
+      size: 20675174
     - path: src/rail_edge_mlops/data/split.py
       hash: md5
-      md5: d7652b7139c0b43329436140798aef12
-      size: 4601
+      md5: 50259066c44af5c91fae76e4415fc418
+      size: 5153
     params:
       params.yaml:
         split:
           test_location: boston-seaport
           val_fraction: 0.2
           seed: 42
+          subsample_logs:
     outs:
     - path: data/processed/splits
       hash: md5
-      md5: 1502d2199bc12e3698c34e89ba14261c.dir
-      size: 64740
+      md5: 83407aed1e04c026a84fb7f55a0dab54.dir
+      size: 88209524
       nfiles: 4
