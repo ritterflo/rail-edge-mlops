@@ -29,7 +29,10 @@ HOST_USER  := $(shell id -un)
 VIDEO_GID  := $(shell getent group video  | cut -d: -f3)
 RENDER_GID := $(shell getent group render | cut -d: -f3)
 
+# nofile: dataloader workers hold many descriptors; the default 1024 is exhausted
+# thousands of batches into a run, which is an expensive place to discover it.
 GPU_ARGS := --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e USER=$(HOST_USER) \
+	--ulimit nofile=65536:65536 \
 	--device=/dev/kfd --device=/dev/dri \
 	--group-add $(VIDEO_GID) --group-add $(RENDER_GID) \
 	--security-opt seccomp=unconfined \

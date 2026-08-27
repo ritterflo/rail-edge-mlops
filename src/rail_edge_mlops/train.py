@@ -16,6 +16,7 @@ from pathlib import Path
 import mlflow
 import numpy as np
 import torch
+import torch.multiprocessing
 import yaml
 from torch.utils.data import DataLoader
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
@@ -24,6 +25,12 @@ from rail_edge_mlops import provenance
 from rail_edge_mlops.data.categories import CLASS_TO_ID, DETECTION_CLASSES
 from rail_edge_mlops.data.dataset import CocoDetection, collate
 from rail_edge_mlops.evaluate import evaluate, summarise, write
+
+# DataLoader workers pass tensors between processes as file descriptors by default,
+# and the container's soft limit is 1024. Eight workers over thousands of batches
+# exhausts that and fails with "received 0 items of ancdata" -- typically far into a
+# run. The file_system strategy passes shared-memory names instead and has no such cap.
+torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 def seed_everything(seed: int) -> None:
@@ -90,6 +97,13 @@ def main() -> int:
         "--limit-eval-images", type=int, default=None, help="evaluate on only the first N images"
     )
     ap.add_argument(
+        "--eval-only",
+        action="store_true",
+        help="skip training; load the model from --out-dir and evaluate it. Evaluates an "
+        "existing checkpoint against a split without spending another epoch, and "
+        "recovers a run interrupted after the model was saved.",
+    )
+    ap.add_argument(
         "--eval-test",
         action="store_true",
         help="also evaluate the held-out location; off by default so the "
@@ -121,8 +135,9 @@ def main() -> int:
         revision=cfg["checkpoint_revision"],
         size={"height": cfg["image_size"][0], "width": cfg["image_size"][1]},
     )
+    source = str(args.out_dir / "model") if args.eval_only else cfg["checkpoint"]
     model = AutoModelForObjectDetection.from_pretrained(
-        cfg["checkpoint"],
+        source,
         revision=cfg["checkpoint_revision"],
         num_labels=len(DETECTION_CLASSES),
         id2label={v: k for k, v in CLASS_TO_ID.items()},
@@ -171,7 +186,10 @@ def main() -> int:
         model.train()
         step = 0
         running = 0.0
-        for _epoch in range(cfg["epochs"]):
+        if args.eval_only:
+            print("eval-only: skipping training")
+            total_steps = 0
+        for _epoch in range(0 if args.eval_only else cfg["epochs"]):
             for batch in loaders["train"]:
                 pixel_values = batch["pixel_values"].to(device)
                 labels = [{k: v.to(device) for k, v in lbl.items()} for lbl in batch["labels"]]
@@ -196,9 +214,10 @@ def main() -> int:
             if step >= total_steps:
                 break
 
-        args.out_dir.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(args.out_dir / "model")
-        processor.save_pretrained(args.out_dir / "model")
+        if not args.eval_only:
+            args.out_dir.mkdir(parents=True, exist_ok=True)
+            model.save_pretrained(args.out_dir / "model")
+            processor.save_pretrained(args.out_dir / "model")
 
         splits_to_eval = ["val"] + (["test"] if args.eval_test else [])
         for split in splits_to_eval:
