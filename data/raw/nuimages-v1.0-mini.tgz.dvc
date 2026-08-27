@@ -1,0 +1,13 @@
+md5: 6a3d10620b76cdc55b2744ed08858976
+frozen: true
+deps:
+- checksum: '"6dbd9003f436e1d41a255bb45367b26b-15"'
+  size: 117873411
+  hash: md5
+  path: 
+    https://motional-nuscenes.s3.amazonaws.com/public/nuimages-v1.0/nuimages-v1.0-mini.tgz
+outs:
+- md5: 2b4ff9756ec996d2b9d9d4e28197b2cf
+  size: 117873411
+  hash: md5
+  path: nuimages-v1.0-mini.tgz

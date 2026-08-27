@@ -1,7 +1,7 @@
 # rail-edge-mlops
 
-A closed-loop MLOps pipeline for rail obstacle detection: train on an AMD GPU, deploy to an
-NVIDIA Jetson AGX Orin, replay real rail video through it, and detect input/output drift in
+A closed-loop MLOps pipeline for edge object detection: train on an AMD GPU, deploy to an
+NVIDIA Jetson AGX Orin, replay real driving video through it, and detect input/output drift in
 operation — with every promotion gated by an on-device acceptance test.
 
 > **Status: early.** Phase 0 (reproducible foundation) in progress. Nothing here is finished yet;
@@ -24,7 +24,7 @@ explicit model handoff contract and a real acceptance gate, which is the piece w
 ```
   TRAINING HOST (x86, Radeon RX 7900 XT / ROCm)        EDGE (Jetson AGX Orin 32GB / JetPack 6.2)
   ─────────────────────────────────────────────        ──────────────────────────────────────────
-  OSDaR23 ──► DVC ──► train (PyTorch/ROCm)             CI runner on device
+  nuImages ─► DVC ──► train (PyTorch/ROCm)             CI runner on device
                           │                                  │
                           ├──► MLflow (Postgres+MinIO)        ├──► trtexec ──► TensorRT engine
                           │      experiments + registry       │
@@ -32,7 +32,7 @@ explicit model handoff contract and a real acceptance gate, which is the piece w
                                  (the handoff contract)       │   ONNX-CPU vs    │ blocks
                                                               │   TRT-FP16/INT8  │ promotion
                                                               ▼                  │
-  recorded rail video ──► RTSP replay ──────────────► Triton (TensorRT backend) ◄┘
+  recorded video ───────► RTSP replay ──────────────► Triton (TensorRT backend) ◄┘
                                                               │
                                                               ▼
                                         Prometheus + Grafana ──► drift monitor
@@ -46,9 +46,12 @@ used only offline, to grade the detector.
 
 Evidence comes in tiers, and the distinction matters:
 
-1. **Natural held-out shift (primary evidence).** OSDaR23 subsequences are split *by condition*,
-   not randomly. Real distribution shift, real labels — so we can show the detector fired *and*
-   accuracy actually dropped.
+1. **Natural held-out shift (primary evidence).** Data is split *by location*, not randomly:
+   train on Singapore, evaluate on Boston. Different continent, architecture, vehicle mix — and
+   Singapore drives on the left. Real distribution shift with real labels on both sides, so we can
+   show the detector fired *and* accuracy actually dropped. Splitting by location also forces
+   grouping by capture log, which prevents near-duplicate frames from the same drive leaking
+   across the split and inflating validation scores.
 2. **Synthetic corruption sweep (calibration only).** Fog / rain / low-light / motion-blur at
    graded severities. Natural data has no clean severity axis, and thresholds need one. This
    calibrates; it does not prove.
@@ -82,8 +85,23 @@ otherwise propagate here. RT-DETR was also designed against TensorRT, which suit
 path. The tradeoff: its deformable-attention CUDA kernel does not build on ROCm, so training falls
 back to the pure-PyTorch path.
 
-**Public data only.** OSDaR23 is openly published by DZSF / Digitale Schiene Deutschland. This
-project is unaffiliated with, and contains no material from, the author's employer.
+**Why driving data, not rail.** The intended dataset was OSDaR23 (open rail sensor data from
+DZSF / Digitale Schiene Deutschland), but its host has been unreachable. nuScenes/nuImages was
+chosen instead because its camera + lidar + radar suite matches the same problem shape, and its
+metadata carries the location and capture-time attributes the drift split needs. If OSDaR23
+returns it becomes an addition rather than a replacement — a detector trained on Boston and
+Singapore streets, then fed Hamburg railway footage, is a far stronger drift demonstration than
+either dataset alone.
+
+**Public data only.** This project is unaffiliated with, and contains no material from, the
+author's employer.
+
+## Data licence and attribution
+
+Training data is [nuImages](https://www.nuscenes.org/nuimages) and
+[nuScenes](https://www.nuscenes.org/nuscenes) by **Motional**, used under
+**CC BY-NC-SA 4.0** — non-commercial use only. The code in this repository is Apache-2.0; the
+data is not, and derived datasets inherit the ShareAlike terms.
 
 ## License
 

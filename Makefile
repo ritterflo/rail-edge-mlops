@@ -90,3 +90,24 @@ check-services: image  ## Integration check -- requires `make services-up` first
 		-e MLFLOW_TRACKING_URI=http://mlflow:5000 \
 		-v $(PWD):/workspace -w /workspace \
 		$(IMAGE) python3 -m rail_edge_mlops.check_tracking
+
+# --- Data versioning ------------------------------------------------------
+# Joins the compose network because MinIO is bound to loopback on the host and
+# is therefore unreachable from a bridge-network container. Credentials come
+# from .env; .dvc/config holds only the bucket and endpoint, never secrets.
+DVC_RUN := docker run --rm \
+	--network rail-edge_default \
+	--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
+	--env-file .env \
+	-v $(PWD):/workspace -w /workspace $(IMAGE)
+
+.PHONY: dvc data-push data-pull
+
+dvc:  ## Run a dvc command, e.g. make dvc CMD="status"
+	$(DVC_RUN) dvc $(CMD)
+
+data-push:  ## Upload tracked data to MinIO
+	$(DVC_RUN) dvc push
+
+data-pull:  ## Fetch tracked data from MinIO
+	$(DVC_RUN) dvc pull

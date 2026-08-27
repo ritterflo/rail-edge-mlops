@@ -1,0 +1,7 @@
+[cache]
+    type = "hardlink,symlink"
+[core]
+    remote = minio
+['remote "minio"']
+    url = s3://dvc
+    endpointurl = http://minio:9000

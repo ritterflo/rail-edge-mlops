@@ -12,7 +12,12 @@ __pycache__/
 *.key
 
 # Data — tracked by DVC, never by git
+# Data is tracked by DVC, never by git -- but the pointer files must be
+# committed. Git will not descend into an excluded directory, so the `!/data/**/`
+# line re-including directories is load-bearing: without it the *.dvc exceptions
+# below never match anything.
 /data/**
+!/data/**/
 !/data/.gitkeep
 !/data/**/*.dvc
 !/data/**/.gitignore

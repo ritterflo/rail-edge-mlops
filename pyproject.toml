@@ -7,6 +7,10 @@ requires-python = "==3.12.*"
 # they are ROCm-index-specific and pinned in docker/torch-requirements.txt instead.
 dependencies = [
     "mlflow==3.15.2",
+    "dvc[s3]==3.65.0",
+    # DVC 3.x uses pathspec's pre-1.0 API (_DIR_MARK) but declares only
+    # pathspec>=0.10.3, so resolvers pick 1.x and dvc init dies on import.
+    "pathspec<1.0",
 ]
 
 [dependency-groups]
