@@ -64,9 +64,16 @@ def test_every_mapping_target_is_a_known_class(source: str, target: str):
     assert target in DETECTION_CLASSES
 
 
-def test_category_ids_are_stable_and_one_based():
-    assert CLASS_TO_ID == {n: i + 1 for i, n in enumerate(DETECTION_CLASSES)}
+def test_category_ids_are_zero_indexed_and_in_range():
+    """The invariant that a 1-indexed id violated, surfacing as a GPU fault.
+
+    class_labels index a logits tensor of width num_labels, so the largest id must be
+    num_labels - 1. A 1-indexed scheme reads one past the end inside a kernel.
+    """
+    assert CLASS_TO_ID == {n: i for i, n in enumerate(DETECTION_CLASSES)}
     assert len(DETECTION_CLASSES) == 10
+    assert min(CLASS_TO_ID.values()) == 0
+    assert max(CLASS_TO_ID.values()) == len(DETECTION_CLASSES) - 1
 
 
 def test_subsample_limits_training_logs_only():

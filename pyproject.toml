@@ -12,6 +12,11 @@ dependencies = [
     # pathspec>=0.10.3, so resolvers pick 1.x and dvc init dies on import.
     "pathspec<1.0",
     "pyyaml>=6.0",
+    "transformers>=4.48",
+    # Brings pycocotools; MeanAveragePrecision gives per-class AP without
+    # hand-rolling COCO evaluation.
+    "torchmetrics[detection]>=1.6",
+    "pillow>=11.0",
 ]
 
 [dependency-groups]

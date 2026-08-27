@@ -11,3 +11,34 @@ split:
   # invariant survives. Recorded in the split manifest, so a subsampled run can
   # never be mistaken for a full one.
   subsample_logs: null
+
+train:
+  # Pinned by revision, not just name: PekingU/rtdetr_v2_r18vd is a live repo whose
+  # weights can change. The checkpoint is the most consequential input to every model
+  # trained here, so it is the last thing that should float.
+  checkpoint: PekingU/rtdetr_v2_r18vd
+  checkpoint_revision: 5650961749fa93567c0d46fc7f43ea4f9e914107
+
+  # 640x640 matches the checkpoint's own preprocessing. It squashes 16:9 into 1:1
+  # anisotropically, which 1024x576 would not -- that is the first queued experiment,
+  # to be judged against the measured seed noise floor rather than argued about.
+  image_size: [640, 640]
+
+  epochs: 1
+  batch_size: 8
+  # Fine-tuning learning rates, an order of magnitude below from-scratch. Too high
+  # here destroys the pretrained features in the first few hundred steps, before the
+  # randomly-initialised head produces gradients worth following.
+  lr: 1.0e-4
+  # The head must move a lot; the backbone barely at all.
+  backbone_lr_mult: 0.1
+  weight_decay: 1.0e-4
+  warmup_steps: 200
+  grad_clip: 0.1
+
+  seed: 42
+  num_workers: 8
+  # Cap steps for smoke runs. null = a full pass over the training split.
+  max_steps: null
+  # Score below which detections are discarded at evaluation time.
+  score_threshold: 0.05

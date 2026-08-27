@@ -133,3 +133,24 @@ check-repro:  ## Determinism gate: same inputs must produce the same outputs
 	@git diff --exit-code dvc.lock \
 		&& echo "OK: pipeline is deterministic — dvc.lock unchanged" \
 		|| { echo "FAIL: rerunning the pipeline changed dvc.lock (see diff above)"; exit 1; }
+
+# --- Training -------------------------------------------------------------
+# Needs both the GPU and MLflow, so it joins the compose network and carries the
+# GPU flags. RAIL_EDGE_IMAGE is injected because a container cannot see the tag it
+# was started from, and that tag is one third of a run's provenance.
+TRAIN_RUN := docker run --rm $(GPU_ARGS) \
+	--network rail-edge_default \
+	-e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+	-e RAIL_EDGE_IMAGE=$(IMAGE) \
+	-e HF_HOME=/workspace/.cache/huggingface \
+	$(if $(wildcard .env),--env-file .env,) \
+	-v $(PWD):/workspace -w /workspace $(IMAGE)
+
+.PHONY: train train-smoke
+
+train: image  ## Fine-tune the detector (needs `make services-up`)
+	$(TRAIN_RUN) python3 -m rail_edge_mlops.train $(ARGS)
+
+train-smoke: image  ## 20 steps on a handful of images, to prove the loop runs
+	$(TRAIN_RUN) python3 -m rail_edge_mlops.train \
+		--experiment rtdetr-smoke --run-name smoke --allow-dirty $(ARGS)

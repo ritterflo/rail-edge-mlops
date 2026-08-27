@@ -35,8 +35,8 @@ stages:
       nfiles: 93486
     - path: src/rail_edge_mlops/data/categories.py
       hash: md5
-      md5: 0b20b2e70f01d86e394a12496e616f9c
-      size: 1629
+      md5: 18513540a243b9b19a25ed01e4af2dd3
+      size: 2061
     - path: src/rail_edge_mlops/data/convert.py
       hash: md5
       md5: c21ae26f2f27628155072667f9a5e830
@@ -44,8 +44,8 @@ stages:
     outs:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: bbd71aab02edfa65eab7b8a9b2a8ba23
-      size: 88187705
+      md5: 88e5fc06961102fc13437d65428c3032
+      size: 88151390
     - path: data/processed/provenance.json
       hash: md5
       md5: 3e19f94ba9538089d5c3e5d66e2db7b2
@@ -58,8 +58,8 @@ stages:
     deps:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: bbd71aab02edfa65eab7b8a9b2a8ba23
-      size: 88187705
+      md5: 88e5fc06961102fc13437d65428c3032
+      size: 88151390
     - path: data/processed/provenance.json
       hash: md5
       md5: 3e19f94ba9538089d5c3e5d66e2db7b2
@@ -78,8 +78,8 @@ stages:
     outs:
     - path: data/processed/splits
       hash: md5
-      md5: 83407aed1e04c026a84fb7f55a0dab54.dir
-      size: 88209524
+      md5: e3db904bbcfd5c7ef117ee715a905c39.dir
+      size: 88173207
       nfiles: 4
   report:
     cmd: python3 -m rail_edge_mlops.data.report --splits-dir 
@@ -92,8 +92,8 @@ stages:
       size: 20675174
     - path: data/processed/splits
       hash: md5
-      md5: 83407aed1e04c026a84fb7f55a0dab54.dir
-      size: 88209524
+      md5: e3db904bbcfd5c7ef117ee715a905c39.dir
+      size: 88173207
       nfiles: 4
     - path: src/rail_edge_mlops/data/report.py
       hash: md5

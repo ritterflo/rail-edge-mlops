@@ -28,7 +28,14 @@ NUIMAGES_TO_DETECTION: dict[str, str] = {
     "vehicle.truck": "truck",
 }
 
-# Fixed order -> stable COCO category ids across every rebuild of the dataset.
+# Fixed order -> stable category ids across every rebuild of the dataset.
+#
+# ZERO-indexed, deliberately. COCO conventionally numbers categories from 1, but these
+# ids are handed to the model as `class_labels`, which index a tensor of width
+# num_labels. A 1-indexed id equal to num_labels reads one element past the end of the
+# classification logits, inside a GPU kernel -- surfacing as an opaque
+# HSA_STATUS_ERROR_EXCEPTION rather than an IndexError, and only when a batch happens
+# to contain the last class.
 DETECTION_CLASSES: list[str] = [
     "barrier",
     "bicycle",
@@ -42,4 +49,4 @@ DETECTION_CLASSES: list[str] = [
     "truck",
 ]
 
-CLASS_TO_ID: dict[str, int] = {name: i + 1 for i, name in enumerate(DETECTION_CLASSES)}
+CLASS_TO_ID: dict[str, int] = {name: i for i, name in enumerate(DETECTION_CLASSES)}
