@@ -12,11 +12,25 @@ IMAGE := rail-edge/train:$(TAG)
 
 # --device kfd/dri + video/render groups: ROCm GPU passthrough.
 # --ipc=host --shm-size: PyTorch dataloader workers die on the default 64MB /dev/shm.
-DOCKER_RUN := docker run --rm \
+# Run as the invoking user, not root: anything the container writes into the
+# bind-mounted workspace (caches, checkpoints, exports) would otherwise be
+# root-owned, and CI's next `git clean -ffdx` cannot delete those files.
+HOST_UID   := $(shell id -u)
+HOST_GID   := $(shell id -g)
+# Numeric HOST GIDs, deliberately. `--group-add render` resolves the name against
+# the CONTAINER's /etc/group, which maps it to a different number (109 vs the
+# host's 110). As root that went unnoticed; as a normal user the GID must match
+# the device file's real owner or /dev/kfd is unreadable.
+VIDEO_GID  := $(shell getent group video  | cut -d: -f3)
+RENDER_GID := $(shell getent group render | cut -d: -f3)
+
+GPU_ARGS := --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
 	--device=/dev/kfd --device=/dev/dri \
-	--group-add video --group-add render \
+	--group-add $(VIDEO_GID) --group-add $(RENDER_GID) \
 	--security-opt seccomp=unconfined \
-	--ipc=host --shm-size=8g \
+	--ipc=host --shm-size=8g
+
+DOCKER_RUN := docker run --rm $(GPU_ARGS) \
 	-v $(PWD):/workspace -w /workspace \
 	$(IMAGE)
 
@@ -34,12 +48,7 @@ image:  ## Build the training image if this content hash has no image yet
 		|| docker build -f docker/Dockerfile.train -t $(IMAGE) .
 
 shell: image  ## Interactive shell inside the training image
-	@docker run --rm -it \
-		--device=/dev/kfd --device=/dev/dri \
-		--group-add video --group-add render \
-		--security-opt seccomp=unconfined \
-		--ipc=host --shm-size=8g \
-		-v $(PWD):/workspace -w /workspace $(IMAGE) /bin/bash
+	@docker run --rm -it $(GPU_ARGS) -v $(PWD):/workspace -w /workspace $(IMAGE) /bin/bash
 
 lint: image  ## Ruff lint + format check
 	$(DOCKER_RUN) ruff check .
@@ -77,6 +86,7 @@ services-logs:  ## Tail service logs
 check-services: image  ## Integration check -- requires `make services-up` first
 	docker run --rm \
 		--network rail-edge_default \
+		--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
 		-e MLFLOW_TRACKING_URI=http://mlflow:5000 \
 		-v $(PWD):/workspace -w /workspace \
 		$(IMAGE) python3 -m rail_edge_mlops.check_tracking
