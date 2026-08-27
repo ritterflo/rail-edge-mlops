@@ -70,7 +70,7 @@ accuracy drop.
 
 ## Roadmap
 
-- [ ] **P0** — reproducible foundation: pinned env, DVC-tracked data, MLflow, split policy
+- [x] **P0** — reproducible foundation: pinned env, DVC-tracked data, MLflow, split policy
 - [ ] **P1** — baseline training on ROCm + evaluation harness
 - [ ] **P2** — ONNX handoff contract, on-device TensorRT build, parity gate
 - [ ] **P3** — Triton serving + RTSP replay + metrics
