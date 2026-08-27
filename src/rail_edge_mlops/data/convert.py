@@ -12,7 +12,6 @@ import argparse
 import json
 import re
 from collections import Counter
-from datetime import datetime
 from pathlib import Path
 
 from rail_edge_mlops.data.categories import CLASS_TO_ID, DETECTION_CLASSES, NUIMAGES_TO_DETECTION
@@ -93,10 +92,12 @@ def convert(meta_dir: Path, out_path: Path, sidecar_path: Path) -> dict:
         kept[target] += 1
 
     coco = {
+        # No generation timestamp: it would make this file differ on every run for no
+        # benefit, breaking the determinism gate. When it was built is recorded by git and
+        # dvc.lock, which are the right places for it.
         "info": {
             "description": "nuImages converted to COCO, nuScenes 10-class detection taxonomy",
             "source": "nuImages by Motional, CC BY-NC-SA 4.0",
-            "generated": datetime.now().isoformat(timespec="seconds"),
         },
         "images": images,
         "annotations": annotations,

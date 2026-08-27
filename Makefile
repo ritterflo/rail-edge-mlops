@@ -111,3 +111,13 @@ data-push:  ## Upload tracked data to MinIO
 
 data-pull:  ## Fetch tracked data from MinIO
 	$(DVC_RUN) dvc pull
+
+repro:  ## Rebuild the data pipeline (needs services up)
+	$(DVC_RUN) dvc repro
+
+check-repro:  ## Determinism gate: same inputs must produce the same outputs
+	$(DVC_RUN) dvc pull
+	$(DVC_RUN) dvc repro --force
+	@git diff --exit-code dvc.lock \
+		&& echo "OK: pipeline is deterministic — dvc.lock unchanged" \
+		|| { echo "FAIL: rerunning the pipeline changed dvc.lock (see diff above)"; exit 1; }

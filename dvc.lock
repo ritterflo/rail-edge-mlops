@@ -31,13 +31,13 @@ stages:
       size: 1629
     - path: src/rail_edge_mlops/data/convert.py
       hash: md5
-      md5: 10ab5f92db8605ad340997424ade61da
-      size: 4827
+      md5: 95ee85df2a08c6ed5dd033d8a4350b59
+      size: 4958
     outs:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: cc11f43f54f25fb3a2bfe14de4bca87e
-      size: 60291
+      md5: 4f07a17149b3fab1d7678eda8189ccc6
+      size: 60255
     - path: data/processed/provenance.json
       hash: md5
       md5: 2270f29d674112c58999010d7048e872
@@ -50,8 +50,8 @@ stages:
     deps:
     - path: data/processed/nuimages_coco.json
       hash: md5
-      md5: cc11f43f54f25fb3a2bfe14de4bca87e
-      size: 60291
+      md5: 4f07a17149b3fab1d7678eda8189ccc6
+      size: 60255
     - path: data/processed/provenance.json
       hash: md5
       md5: 2270f29d674112c58999010d7048e872
@@ -69,6 +69,6 @@ stages:
     outs:
     - path: data/processed/splits
       hash: md5
-      md5: fae24e44d2add43c66fdfdbcceb86824.dir
-      size: 64848
+      md5: 1502d2199bc12e3698c34e89ba14261c.dir
+      size: 64740
       nfiles: 4
