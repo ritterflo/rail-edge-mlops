@@ -125,7 +125,10 @@ repro:  ## Rebuild the data pipeline (needs services up)
 	$(DVC_RUN) dvc repro
 
 check-repro:  ## Determinism gate: same inputs must produce the same outputs
-	$(DVC_RUN) dvc pull
+	# Only the raw input. The whole point is to rebuild the derived outputs, so
+	# fetching them first would be wasted bandwidth -- and would make the gate depend
+	# on someone having remembered to push them.
+	$(DVC_RUN) dvc pull data/raw/nuimages-v1.0-mini.tgz.dvc
 	$(DVC_RUN) dvc repro --force
 	@git diff --exit-code dvc.lock \
 		&& echo "OK: pipeline is deterministic — dvc.lock unchanged" \
