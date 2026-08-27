@@ -5,7 +5,9 @@ description = "Closed-loop MLOps for rail obstacle detection: ROCm training, Jet
 requires-python = "==3.12.*"
 # Runtime deps land here as phases need them. torch/torchvision are deliberately absent:
 # they are ROCm-index-specific and pinned in docker/torch-requirements.txt instead.
-dependencies = []
+dependencies = [
+    "mlflow==3.15.2",
+]
 
 [dependency-groups]
 dev = [

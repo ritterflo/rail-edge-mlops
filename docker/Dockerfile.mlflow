@@ -1,0 +1,11 @@
+# syntax=docker/dockerfile:1
+# MLflow server. Needs psycopg2 for the Postgres backend store and boto3 for the
+# MinIO artifact store; no published MLflow image ships both, hence this file.
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir \
+        mlflow==3.15.2 \
+        psycopg2-binary==2.9.10 \
+        boto3==1.35.99
+
+EXPOSE 5000

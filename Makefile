@@ -54,3 +54,29 @@ smoke: image  ## Prove the GPU is really reachable from inside the container
 clean-image:  ## Remove images for older content hashes
 	@docker images 'rail-edge/train' --format '{{.Repository}}:{{.Tag}}' \
 		| grep -v '$(TAG)' | xargs -r docker rmi
+
+# --- Local services (Postgres + MinIO + MLflow) --------------------------
+# `restart: unless-stopped` means these are long-lived infrastructure: bring
+# them up once and Docker restores them across reboots.
+COMPOSE := docker compose --env-file .env -f infra/compose.yaml
+
+.PHONY: services-up services-down services-ps services-logs
+
+services-up:  ## Start Postgres, MinIO and MLflow (persist across reboots)
+	$(COMPOSE) up -d --build
+
+services-down:  ## Stop the services (volumes are kept)
+	$(COMPOSE) down
+
+services-ps:  ## Show service status
+	$(COMPOSE) ps
+
+services-logs:  ## Tail service logs
+	$(COMPOSE) logs -f --tail=50
+
+check-services: image  ## Integration check -- requires `make services-up` first
+	docker run --rm \
+		--network rail-edge_default \
+		-e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+		-v $(PWD):/workspace -w /workspace \
+		$(IMAGE) python3 -m rail_edge_mlops.check_tracking
