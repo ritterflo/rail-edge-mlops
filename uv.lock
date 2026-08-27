@@ -1872,6 +1872,7 @@ dependencies = [
     { name = "dvc", extra = ["s3"] },
     { name = "mlflow" },
     { name = "pathspec" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1885,6 +1886,7 @@ requires-dist = [
     { name = "dvc", extras = ["s3"], specifier = "==3.65.0" },
     { name = "mlflow", specifier = "==3.15.2" },
     { name = "pathspec", specifier = "<1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [package.metadata.requires-dev]

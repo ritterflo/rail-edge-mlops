@@ -17,6 +17,11 @@ IMAGE := rail-edge/train:$(TAG)
 # root-owned, and CI's next `git clean -ffdx` cannot delete those files.
 HOST_UID   := $(shell id -u)
 HOST_GID   := $(shell id -g)
+# The image has a passwd entry for uid 1000 (Ubuntu's `ubuntu` user) and nothing else,
+# so DVC's getpwuid() succeeds by luck for uid 1000 and dies for any other -- including
+# the CI runner's 1001. getpass.getuser() checks USER before falling back to the passwd
+# database, so exporting it makes the lookup work for any uid.
+HOST_USER  := $(shell id -un)
 # Numeric HOST GIDs, deliberately. `--group-add render` resolves the name against
 # the CONTAINER's /etc/group, which maps it to a different number (109 vs the
 # host's 110). As root that went unnoticed; as a normal user the GID must match
@@ -24,7 +29,7 @@ HOST_GID   := $(shell id -g)
 VIDEO_GID  := $(shell getent group video  | cut -d: -f3)
 RENDER_GID := $(shell getent group render | cut -d: -f3)
 
-GPU_ARGS := --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
+GPU_ARGS := --user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e USER=$(HOST_USER) \
 	--device=/dev/kfd --device=/dev/dri \
 	--group-add $(VIDEO_GID) --group-add $(RENDER_GID) \
 	--security-opt seccomp=unconfined \
@@ -100,7 +105,7 @@ check-services: image  ## Integration check -- requires `make services-up` first
 # from the calling environment, so both paths work without a second code path.
 DVC_RUN := docker run --rm \
 	--network rail-edge_default \
-	--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp \
+	--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e USER=$(HOST_USER) \
 	$(if $(wildcard .env),--env-file .env,) \
 	-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
 	-v $(PWD):/workspace -w /workspace $(IMAGE)
