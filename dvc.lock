@@ -1,0 +1,74 @@
+schema: '2.0'
+stages:
+  extract:
+    cmd: mkdir -p data/interim/nuimages-mini && tar xzf 
+      data/raw/nuimages-v1.0-mini.tgz -C data/interim/nuimages-mini v1.0-mini 
+      samples
+    deps:
+    - path: data/raw/nuimages-v1.0-mini.tgz
+      hash: md5
+      md5: 2b4ff9756ec996d2b9d9d4e28197b2cf
+      size: 117873411
+    outs:
+    - path: data/interim/nuimages-mini
+      hash: md5
+      md5: e86ef3ec185adac784943ff441a0c0c8.dir
+      size: 10259688
+      nfiles: 60
+  convert:
+    cmd: python3 -m rail_edge_mlops.data.convert --meta-dir 
+      data/interim/nuimages-mini/v1.0-mini --out 
+      data/processed/nuimages_coco.json --sidecar data/processed/provenance.json
+    deps:
+    - path: data/interim/nuimages-mini
+      hash: md5
+      md5: e86ef3ec185adac784943ff441a0c0c8.dir
+      size: 10259688
+      nfiles: 60
+    - path: src/rail_edge_mlops/data/categories.py
+      hash: md5
+      md5: 0b20b2e70f01d86e394a12496e616f9c
+      size: 1629
+    - path: src/rail_edge_mlops/data/convert.py
+      hash: md5
+      md5: 10ab5f92db8605ad340997424ade61da
+      size: 4827
+    outs:
+    - path: data/processed/nuimages_coco.json
+      hash: md5
+      md5: cc11f43f54f25fb3a2bfe14de4bca87e
+      size: 60291
+    - path: data/processed/provenance.json
+      hash: md5
+      md5: 2270f29d674112c58999010d7048e872
+      size: 12192
+  split:
+    cmd: python3 -m rail_edge_mlops.data.split --coco 
+      data/processed/nuimages_coco.json --provenance 
+      data/processed/provenance.json --params params.yaml --out-dir 
+      data/processed/splits
+    deps:
+    - path: data/processed/nuimages_coco.json
+      hash: md5
+      md5: cc11f43f54f25fb3a2bfe14de4bca87e
+      size: 60291
+    - path: data/processed/provenance.json
+      hash: md5
+      md5: 2270f29d674112c58999010d7048e872
+      size: 12192
+    - path: src/rail_edge_mlops/data/split.py
+      hash: md5
+      md5: d7652b7139c0b43329436140798aef12
+      size: 4601
+    params:
+      params.yaml:
+        split:
+          test_location: boston-seaport
+          val_fraction: 0.2
+          seed: 42
+    outs:
+    - path: data/processed/splits
+      hash: md5
+      md5: fae24e44d2add43c66fdfdbcceb86824.dir
+      size: 64848
+      nfiles: 4

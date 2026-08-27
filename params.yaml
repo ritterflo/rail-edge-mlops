@@ -1,0 +1,8 @@
+# DVC tracks this file. Change a value here and `dvc repro` reruns exactly the stages
+# that depend on it -- the split policy is versioned data, not a flag someone remembered.
+split:
+  # An entire held-out location, so the test set is a real distribution shift.
+  test_location: boston-seaport
+  # Fraction of *logs* (not images) from the training locations reserved for validation.
+  val_fraction: 0.2
+  seed: 42

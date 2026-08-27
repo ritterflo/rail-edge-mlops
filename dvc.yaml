@@ -1,0 +1,42 @@
+stages:
+  # Extracts only the annotated keyframes and metadata. The archive also holds ~106MB
+  # of unannotated `sweeps/` context frames, which nothing downstream reads -- caching
+  # them would double the storage for no gain.
+  extract:
+    cmd: >-
+      mkdir -p data/interim/nuimages-mini &&
+      tar xzf data/raw/nuimages-v1.0-mini.tgz -C data/interim/nuimages-mini v1.0-mini samples
+    deps:
+      - data/raw/nuimages-v1.0-mini.tgz
+    outs:
+      - data/interim/nuimages-mini
+
+  convert:
+    cmd: >-
+      python3 -m rail_edge_mlops.data.convert
+      --meta-dir data/interim/nuimages-mini/v1.0-mini
+      --out data/processed/nuimages_coco.json
+      --sidecar data/processed/provenance.json
+    deps:
+      - data/interim/nuimages-mini
+      - src/rail_edge_mlops/data/convert.py
+      - src/rail_edge_mlops/data/categories.py
+    outs:
+      - data/processed/nuimages_coco.json
+      - data/processed/provenance.json
+
+  split:
+    cmd: >-
+      python3 -m rail_edge_mlops.data.split
+      --coco data/processed/nuimages_coco.json
+      --provenance data/processed/provenance.json
+      --params params.yaml
+      --out-dir data/processed/splits
+    deps:
+      - data/processed/nuimages_coco.json
+      - data/processed/provenance.json
+      - src/rail_edge_mlops/data/split.py
+    params:
+      - split
+    outs:
+      - data/processed/splits
