@@ -1,0 +1,30 @@
+{
+  "name": "rail-edge-mlops (ROCm)",
+  "build": {
+    "dockerfile": "../docker/Dockerfile.train",
+    "context": ".."
+  },
+  "runArgs": [
+    "--device=/dev/kfd",
+    "--device=/dev/dri",
+    "--group-add", "video",
+    "--group-add", "render",
+    "--security-opt", "seccomp=unconfined",
+    "--ipc=host",
+    "--shm-size=8g"
+  ],
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3.12",
+        "python.testing.pytestEnabled": true
+      }
+    }
+  }
+}

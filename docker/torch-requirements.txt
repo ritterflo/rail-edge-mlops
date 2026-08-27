@@ -1,0 +1,6 @@
+# ROCm-specific stack, pinned here rather than in uv.lock: these wheels carry a
+# +rocm7.2 local version and live on PyTorch's ROCm index, not PyPI.
+# This file is covered by the image content hash, so editing a pin rebuilds the image.
+--index-url https://download.pytorch.org/whl/rocm7.2
+torch==2.13.0+rocm7.2
+torchvision==0.28.0+rocm7.2

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: [self-hosted, rocm]
+
+    # Refuse to run on pull requests from forks. The runner is a personal
+    # workstation; without this guard any stranger's PR would execute arbitrary
+    # code on it. Pair with Settings -> Actions -> "Require approval for all
+    # outside collaborators".
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build training image
+        run: make image   # no-op unless docker/** or uv.lock changed
+
+      - name: Lint
+        run: make lint
+
+      - name: Tests
+        run: make test
+
+      - name: GPU smoke test
+        run: make smoke
