@@ -95,6 +95,19 @@ def main() -> int:
     # later comparison means anything.
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument(
+        "--eval-every",
+        type=int,
+        default=1000,
+        help="evaluate on a fixed validation subset every N steps, so convergence is a "
+        "curve rather than an inference from the loss. 0 disables.",
+    )
+    ap.add_argument(
+        "--eval-every-images",
+        type=int,
+        default=2000,
+        help="size of the fixed subset used for periodic evaluation",
+    )
+    ap.add_argument(
         "--limit-images", type=int, default=None, help="use only the first N training images"
     )
     ap.add_argument(
@@ -174,6 +187,19 @@ def main() -> int:
         )
         print(f"{split:<6} {len(ds):>7,} images")
 
+    # A fixed subset, built once and reused, so successive points are comparable.
+    probe = None
+    if args.eval_every and "val" in loaders:
+        probe_ds = CocoDetection(args.splits_dir / "val.json", args.images_root, processor)
+        probe_ds.images = probe_ds.images[: args.eval_every_images]
+        probe = DataLoader(
+            probe_ds,
+            batch_size=cfg["batch_size"],
+            shuffle=False,
+            num_workers=cfg["num_workers"],
+            collate_fn=collate,
+        )
+
     steps_per_epoch = len(loaders["train"])
     total_steps = cfg["max_steps"] or steps_per_epoch * cfg["epochs"]
     optimiser = build_optimiser(model, cfg)
@@ -199,7 +225,8 @@ def main() -> int:
                 pixel_values = batch["pixel_values"].to(device)
                 labels = [{k: v.to(device) for k, v in lbl.items()} for lbl in batch["labels"]]
 
-                loss = model(pixel_values=pixel_values, labels=labels).loss
+                outputs = model(pixel_values=pixel_values, labels=labels)
+                loss = outputs.loss
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), cfg["grad_clip"])
                 optimiser.step()
@@ -212,8 +239,26 @@ def main() -> int:
                     mean = running / 20
                     mlflow.log_metric("train_loss", mean, step=step)
                     mlflow.log_metric("lr", scheduler.get_last_lr()[-1], step=step)
+                    # The total is a sum of ~10 terms across the decoder layers, the
+                    # encoder and the denoising branch. Its early collapse is the
+                    # reinitialised classifier alone; logging the components shows
+                    # whether the flat tail is convergence or box regression still
+                    # improving under a term that stopped moving.
+                    for name, value in (outputs.loss_dict or {}).items():
+                        mlflow.log_metric(f"loss/{name}", float(value), step=step)
                     print(f"  step {step:>6}/{total_steps}  loss {mean:.4f}")
                     running = 0.0
+
+                if probe is not None and step % args.eval_every == 0:
+                    probe_result = evaluate(model, processor, probe, device, cfg["score_threshold"])
+                    mlflow.log_metric("probe.map", probe_result["map"], step=step)
+                    mlflow.log_metric("probe.map_small", probe_result["map_small"], step=step)
+                    mlflow.log_metric("probe.map_large", probe_result["map_large"], step=step)
+                    print(
+                        f"  step {step:>6}  probe mAP {probe_result['map']:.4f}"
+                        f"  (small {probe_result['map_small']:.4f})"
+                    )
+                    model.train()
                 if step >= total_steps:
                     break
             if step >= total_steps:
