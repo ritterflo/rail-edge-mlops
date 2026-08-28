@@ -22,7 +22,7 @@ train:
   # 640x640 matches the checkpoint's own preprocessing. It squashes 16:9 into 1:1
   # anisotropically, which 1024x576 would not -- that is the first queued experiment,
   # to be judged against the measured seed noise floor rather than argued about.
-  image_size: [640, 640]
+  image_size: [1024, 576]
 
   epochs: 1
   batch_size: 8
