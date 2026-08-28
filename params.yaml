@@ -19,10 +19,12 @@ train:
   checkpoint: PekingU/rtdetr_v2_r18vd
   checkpoint_revision: 5650961749fa93567c0d46fc7f43ea4f9e914107
 
-  # 640x640 matches the checkpoint's own preprocessing. It squashes 16:9 into 1:1
-  # anisotropically, which 1024x576 would not -- that is the first queued experiment,
-  # to be judged against the measured seed noise floor rather than argued about.
-  image_size: [1024, 576]
+  # [HEIGHT, WIDTH] -- the order the image processor takes, not the order people say
+  # resolutions out loud. Written the other way round this silently trains a portrait
+  # squash of landscape images, which looks like the experiment failing.
+  # 576x1024 is 16:9 exactly and 32-divisible, so 1600x900 scales uniformly at 0.640;
+  # 640x640 scales 0.400 horizontally against 0.711 vertically.
+  image_size: [576, 1024]
 
   epochs: 1
   batch_size: 8
