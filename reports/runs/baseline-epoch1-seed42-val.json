@@ -15,17 +15,17 @@
     "bins": [
       {
         "bin": "0.0-0.1",
-        "gap": -0.3452,
-        "mean_confidence": 0.0662,
-        "n": 96492,
-        "observed_precision": 0.4114
+        "gap": -0.4668,
+        "mean_confidence": 0.0595,
+        "n": 85579,
+        "observed_precision": 0.5262
       },
       {
         "bin": "0.1-0.2",
-        "gap": -0.6868,
-        "mean_confidence": 0.1266,
-        "n": 16265,
-        "observed_precision": 0.8134
+        "gap": -0.6925,
+        "mean_confidence": 0.1268,
+        "n": 16097,
+        "observed_precision": 0.8193
       },
       {
         "bin": "0.2-0.3",
@@ -42,13 +42,57 @@
         "observed_precision": 1.0
       }
     ],
-    "ece": 0.3963,
-    "n_detections": 113386
+    "ece_same_predictions_only": 0.5039,
+    "n_measured": 102305,
+    "score_percentiles": {
+      "max": 0.3748,
+      "p50": 0.0121,
+      "p90": 0.0275,
+      "p99": 0.072
+    }
   },
   "map": 0.2022,
   "map_50": 0.3117,
   "map_75": 0.207,
   "map_large": 0.4865,
   "map_medium": 0.2949,
-  "map_small": 0.0886
+  "map_small": 0.0886,
+  "operating_points": [
+    {
+      "detections_per_image": 59.637,
+      "precision": 0.0933,
+      "recall": 0.824,
+      "threshold": 0.02
+    },
+    {
+      "detections_per_image": 7.481,
+      "precision": 0.4721,
+      "recall": 0.5232,
+      "threshold": 0.05
+    },
+    {
+      "detections_per_image": 1.115,
+      "precision": 0.8186,
+      "recall": 0.1352,
+      "threshold": 0.1
+    },
+    {
+      "detections_per_image": 0.218,
+      "precision": 0.923,
+      "recall": 0.0298,
+      "threshold": 0.15
+    },
+    {
+      "detections_per_image": 0.041,
+      "precision": 0.9539,
+      "recall": 0.0059,
+      "threshold": 0.2
+    },
+    {
+      "detections_per_image": 0.001,
+      "precision": 1.0,
+      "recall": 0.0001,
+      "threshold": 0.3
+    }
+  ]
 }

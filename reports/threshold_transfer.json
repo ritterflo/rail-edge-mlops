@@ -1,0 +1,20 @@
+{
+  "consequence": "The promotion gate must re-derive the operating threshold per model from that model's own validation split, and the operating point must be specified as a target (a precision level, or a detection density) rather than a score. A threshold carried from a previous model version changes detection rates silently, and mAP will not show it.",
+  "finding": "Score thresholds do not transfer between training runs. Three runs of an identical config produced max scores of 0.375, 0.223 and 0.260, so a fixed threshold cuts each distribution at a different place in its own range. Precision at 0.05 varied by sd 0.132 against mAP's 0.0066.",
+  "measured": {
+    "map_sd": 0.0066,
+    "max_score_by_seed": {
+      "42": 0.3748,
+      "43": 0.223,
+      "44": 0.2602
+    },
+    "precision_sd_by_threshold": {
+      "0.02": 0.0169,
+      "0.05": 0.1324,
+      "0.10": 0.0705,
+      "0.15": 0.0254,
+      "0.20": 0.0342,
+      "0.30": 0.5774
+    }
+  }
+}
