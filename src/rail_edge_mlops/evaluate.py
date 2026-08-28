@@ -35,48 +35,101 @@ def _iou(box: torch.Tensor, others: torch.Tensor) -> torch.Tensor:
     return inter / (area_b + area_o - inter + 1e-9)
 
 
-def calibration(
+def _greedy_match(pred: dict, gt: dict, iou_threshold: float, limit: int) -> list[tuple]:
+    """Match the `limit` highest-scoring detections to ground truth, best score first.
+
+    Mirrors how a consumer reads detections: the confident one claims the object, and a
+    ground-truth box can only be claimed once.
+    """
+    out = []
+    claimed = torch.zeros(len(gt["boxes"]), dtype=torch.bool)
+    order = torch.argsort(pred["scores"], descending=True)[:limit]
+    for i in order:
+        box, label, score = pred["boxes"][i], pred["labels"][i], pred["scores"][i]
+        eligible = (gt["labels"] == label) & ~claimed
+        hit = 0
+        if eligible.any():
+            ious = _iou(box, gt["boxes"][eligible])
+            best = int(torch.argmax(ious))
+            if ious[best] >= iou_threshold:
+                claimed[torch.nonzero(eligible).flatten()[best]] = True
+                hit = 1
+        out.append((float(score), hit))
+    return out
+
+
+def operating_points(
     predictions: list[dict],
     targets: list[dict],
     iou_threshold: float = 0.5,
-    bins: int = 10,
-    top_k: int = 20,
+    thresholds: tuple[float, ...] = (0.02, 0.05, 0.10, 0.15, 0.20, 0.30),
+) -> list[dict]:
+    """Precision, recall and detection density at candidate score thresholds.
+
+    This is what actually answers "where do I set the threshold" for serving. mAP cannot:
+    it is threshold-free by construction. A single calibration error cannot either: it
+    compresses exactly the trade-off you need to see into one number.
+    """
+    n_gt = sum(len(gt["boxes"]) for gt in targets)
+    n_images = max(len(targets), 1)
+    rows = []
+    for t in thresholds:
+        tp = n_det = 0
+        for pred, gt in zip(predictions, targets, strict=True):
+            keep = pred["scores"] >= t
+            kept = {k: v[keep] for k, v in pred.items()}
+            matches = _greedy_match(kept, gt, iou_threshold, limit=len(kept["scores"]))
+            tp += sum(h for _, h in matches)
+            n_det += len(matches)
+        rows.append(
+            {
+                "threshold": t,
+                "detections_per_image": round(n_det / n_images, 3),
+                "precision": round(tp / n_det, 4) if n_det else 0.0,
+                "recall": round(tp / n_gt, 4) if n_gt else 0.0,
+            }
+        )
+    return rows
+
+
+def calibration(
+    predictions: list[dict], targets: list[dict], iou_threshold: float = 0.5, bins: int = 10
 ) -> dict:
-    """Bin the top-K detections per image by score; compare score against hit rate.
+    """Confidence against observed precision, over top-K per image where K is that
+    image's ground-truth count.
 
-    Top-K per image rather than everything above a score threshold, deliberately. With a
-    fixed threshold the population being measured depends on where the score
-    distribution happens to sit -- three identical training runs produced 66,707,
-    68,452 and 113,386 detections above 0.05, and since ECE is a population-weighted
-    average over bins, its standard deviation across those runs was 0.135 against
-    mAP's 0.0066. That was measuring threshold placement, not calibration.
+    K comes from the data, not from the model's scores. Two earlier attempts -- a fixed
+    score threshold, then a fixed top-20 -- both let the measured population depend on
+    where the score distribution happened to sit, which is why ECE varied by 0.135
+    across three identical runs while mAP varied by 0.0066.
 
-    K=20 sits well above the 6.75 boxes/image in the ground truth and well below COCO's
-    conventional 100, which on this data would be mostly near-zero padding.
+    The bin table is the useful output: it is what recalibration consumes, and
+    "confidence 0.13 means precision 0.84" is directly actionable. The ECE below it is
+    retained only to compare before and after a recalibration fitted on the *same*
+    predictions -- it is not comparable across runs.
     """
     scored: list[tuple[float, int]] = []
     all_scores: list[float] = []
 
     for pred, gt in zip(predictions, targets, strict=True):
         all_scores.extend(pred["scores"].tolist())
-        gt_boxes, gt_labels = gt["boxes"], gt["labels"]
-        claimed = torch.zeros(len(gt_boxes), dtype=torch.bool)
-        # Greedy highest-score-first matching, mirroring how a consumer would read
-        # these detections: the confident one gets the object.
-        for i in torch.argsort(pred["scores"], descending=True)[:top_k]:
-            box, label, score = pred["boxes"][i], pred["labels"][i], pred["scores"][i]
-            eligible = (gt_labels == label) & ~claimed
-            hit = 0
-            if eligible.any():
-                ious = _iou(box, gt_boxes[eligible])
-                best = int(torch.argmax(ious))
-                if ious[best] >= iou_threshold:
-                    claimed[torch.nonzero(eligible).flatten()[best]] = True
-                    hit = 1
-            scored.append((float(score), hit))
+        scored.extend(_greedy_match(pred, gt, iou_threshold, limit=len(gt["boxes"])))
+
+    st = torch.tensor(all_scores)
+    percentiles = (
+        {f"p{q}": round(float(torch.quantile(st, q / 100)), 4) for q in (50, 90, 99)}
+        if st.numel()
+        else {}
+    )
+    percentiles["max"] = round(float(st.max()), 4) if st.numel() else 0.0
 
     if not scored:
-        return {"ece": 0.0, "n_detections": 0, "bins": [], "score_percentiles": {}}
+        return {
+            "ece_same_predictions_only": 0.0,
+            "n_measured": 0,
+            "bins": [],
+            "score_percentiles": percentiles,
+        }
 
     edges = torch.linspace(0, 1, bins + 1)
     buckets = defaultdict(list)
@@ -104,21 +157,9 @@ def calibration(
             }
         )
 
-    # The compression is currently something you infer from bin populations. Reported
-    # directly, it is a number: if p99 sits near 0.2, no conventional threshold works.
-    st = torch.tensor(all_scores)
-    percentiles = (
-        {f"p{q}": round(float(torch.quantile(st, q / 100)), 4) for q in (50, 90, 99)}
-        if st.numel()
-        else {}
-    )
-    percentiles["max"] = round(float(st.max()), 4) if st.numel() else 0.0
-
     return {
-        "ece": round(ece, 4),
-        "n_detections": total,
-        "top_k_per_image": top_k,
-        "n_detections_above_threshold": len(all_scores),
+        "ece_same_predictions_only": round(ece, 4),
+        "n_measured": total,
         "score_percentiles": percentiles,
         "bins": rows,
     }
@@ -190,19 +231,27 @@ def evaluate(model, processor, loader, device, score_threshold: float = 0.05) ->
         "map_large": round(float(computed["map_large"]), 4),
         "ap_per_class": per_class,
         "calibration": calibration(all_preds, all_targets),
+        "operating_points": operating_points(all_preds, all_targets),
     }
 
 
 def summarise(name: str, result: dict) -> str:
     cal = result["calibration"]
+    pct = cal.get("score_percentiles", {})
     lines = [
         f"{name}:",
         f"  mAP        {result['map']:.4f}"
         f"   @50 {result['map_50']:.4f}   @75 {result['map_75']:.4f}",
         f"  by size    small {result['map_small']:.4f}  medium {result['map_medium']:.4f}"
         f"  large {result['map_large']:.4f}",
-        f"  ECE        {cal['ece']:.4f} over {cal['n_detections']:,} detections",
+        f"  scores     p50 {pct.get('p50', 0):.3f}  p90 {pct.get('p90', 0):.3f}"
+        f"  p99 {pct.get('p99', 0):.3f}  max {pct.get('max', 0):.3f}",
     ]
+    for row in result.get("operating_points", []):
+        lines.append(
+            f"    thr {row['threshold']:.2f}   {row['detections_per_image']:>6.2f} det/img"
+            f"   precision {row['precision']:.3f}   recall {row['recall']:.3f}"
+        )
     if result["ap_per_class"]:
         worst = sorted(result["ap_per_class"].items(), key=lambda kv: kv[1])[:3]
         lines.append("  weakest    " + ", ".join(f"{k} {v:.3f}" for k, v in worst))

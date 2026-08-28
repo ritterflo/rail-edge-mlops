@@ -1,23 +1,22 @@
-"""Tests for confidence calibration.
+"""Tests for the operating-point table and the calibration bins.
 
-The metric this replaces was dominated by threshold placement rather than calibration:
-three identical runs produced 66,707 / 68,452 / 113,386 detections above a fixed 0.05
-score, and ECE varied by 0.135 as a result. Top-K per image makes the measured
-population identical across runs, and these tests pin that property.
+Two earlier versions of this measurement let the population depend on the model's own
+score distribution -- first via a fixed score threshold, then via a fixed top-20. Both
+made ECE move for reasons unrelated to calibration. The population is now the image's
+ground-truth count, which comes from the data. These tests pin that.
 """
 
 from __future__ import annotations
 
 import torch
 
-from rail_edge_mlops.evaluate import calibration
+from rail_edge_mlops.evaluate import calibration, operating_points
 
 
-def _image(scores: list[float], hit: list[bool]):
-    """One image's predictions plus ground truth, where `hit[i]` decides whether
-    detection i overlaps a real box."""
+def _sample(scores: list[float], hits: list[bool]):
+    """Build one image. `hits[i]` decides whether detection i sits on a real box."""
     boxes, gt_boxes, gt_labels = [], [], []
-    for i, h in enumerate(hit):
+    for i, h in enumerate(hits):
         x = i * 100.0
         boxes.append([x, 0.0, x + 50, 50.0])
         if h:
@@ -35,54 +34,43 @@ def _image(scores: list[float], hit: list[bool]):
     return pred, gt
 
 
-def test_top_k_bounds_the_measured_population():
-    """20 detections measured from 100, regardless of where the scores sit."""
-    scores = [0.9 - i * 0.005 for i in range(100)]
-    pred, gt = _image(scores, [True] * 100)
-    result = calibration([pred], [gt], top_k=20)
-    assert result["n_detections"] == 20
-    assert result["n_detections_above_threshold"] == 100
+# --- population is set by the data, not by the scores ----------------------------
 
 
-def test_identical_ranking_at_different_scales_measures_the_same_population():
-    """The failure the old metric had: shifting every score changed how many
-    detections were counted, and therefore the ECE."""
-    hit = [True] * 40
-    high, _ = _image([0.9 - i * 0.01 for i in range(40)], hit)
-    low, gt = _image([0.2 - i * 0.001 for i in range(40)], hit)
-    a = calibration([high], [gt], top_k=20)
-    b = calibration([low], [gt], top_k=20)
-    assert a["n_detections"] == b["n_detections"] == 20
+def test_population_equals_ground_truth_count():
+    pred, gt = _sample([0.9 - i * 0.01 for i in range(50)], [True] * 8 + [False] * 42)
+    assert calibration([pred], [gt])["n_measured"] == 8
 
 
-def test_perfect_calibration_scores_near_zero():
-    """Half the detections at 0.5 confidence, half of them correct."""
-    scores = [0.55] * 20
-    pred, gt = _image(scores, [True] * 10 + [False] * 10)
-    result = calibration([pred], [gt], top_k=20)
-    assert result["ece"] < 0.10
+def test_rescaling_every_score_does_not_change_the_population():
+    """The failure both earlier versions had: shift the distribution, change the count."""
+    hits = [True] * 6 + [False] * 24
+    high, gt = _sample([0.9 - i * 0.01 for i in range(30)], hits)
+    low, _ = _sample([0.09 - i * 0.001 for i in range(30)], hits)
+    assert calibration([high], [gt])["n_measured"] == calibration([low], [gt])["n_measured"] == 6
+
+
+# --- the bin table reports what it should ----------------------------------------
 
 
 def test_underconfidence_shows_as_negative_gaps():
-    """What the baseline actually exhibits: low scores, high hit rate."""
-    pred, gt = _image([0.05] * 20, [True] * 20)
-    result = calibration([pred], [gt], top_k=20)
+    """What the baseline exhibits: low scores, high hit rate."""
+    pred, gt = _sample([0.05] * 10, [True] * 10)
+    result = calibration([pred], [gt])
     assert all(b["gap"] < 0 for b in result["bins"])
-    assert result["ece"] > 0.5
 
 
 def test_overconfidence_shows_as_positive_gaps():
-    pred, gt = _image([0.95] * 20, [False] * 20)
-    result = calibration([pred], [gt], top_k=20)
+    """High scores on the wrong detections, so the measured top-K are misses."""
+    pred, gt = _sample([0.95, 0.95, 0.3, 0.3], [False, False, True, True])
+    result = calibration([pred], [gt])
     assert all(b["gap"] > 0 for b in result["bins"])
 
 
 def test_score_percentiles_expose_compression():
-    """A distribution squashed near zero should be visible as a number, not inferred."""
-    pred, gt = _image([0.02 + i * 0.001 for i in range(40)], [True] * 40)
-    result = calibration([pred], [gt], top_k=20)
-    assert result["score_percentiles"]["p99"] < 0.1
-    assert result["score_percentiles"]["max"] < 0.1
+    pred, gt = _sample([0.02 + i * 0.001 for i in range(40)], [True] * 5 + [False] * 35)
+    pct = calibration([pred], [gt])["score_percentiles"]
+    assert pct["p99"] < 0.1 and pct["max"] < 0.1
 
 
 def test_no_detections_is_not_a_crash():
@@ -92,5 +80,33 @@ def test_no_detections_is_not_a_crash():
         "labels": torch.zeros(0, dtype=torch.long),
     }
     gt = {"boxes": torch.zeros(0, 4), "labels": torch.zeros(0, dtype=torch.long)}
-    result = calibration([pred], [gt], top_k=20)
-    assert result["n_detections"] == 0 and result["ece"] == 0.0
+    result = calibration([pred], [gt])
+    assert result["n_measured"] == 0
+
+
+# --- the operating-point table ----------------------------------------------------
+
+
+def test_precision_rises_and_recall_falls_with_threshold():
+    """The trade-off the table exists to expose. Correct detections score high."""
+    scores = [0.9, 0.8, 0.7, 0.05, 0.04, 0.03, 0.02, 0.01]
+    pred, gt = _sample(scores, [True] * 3 + [False] * 5)
+    rows = operating_points([pred], [gt], thresholds=(0.01, 0.1))
+    loose, tight = rows[0], rows[1]
+    assert tight["precision"] > loose["precision"]
+    assert tight["recall"] <= loose["recall"]
+    assert tight["detections_per_image"] < loose["detections_per_image"]
+
+
+def test_a_threshold_above_every_score_yields_nothing():
+    """The situation the real model is in: p99 is 0.18, so 0.5 returns nothing."""
+    pred, gt = _sample([0.1, 0.08, 0.05], [True, False, False])
+    row = operating_points([pred], [gt], thresholds=(0.5,))[0]
+    assert row["detections_per_image"] == 0.0
+    assert row["precision"] == 0.0 and row["recall"] == 0.0
+
+
+def test_recall_is_bounded_by_ground_truth_not_detections():
+    pred, gt = _sample([0.9] * 2, [True] * 2)
+    row = operating_points([pred], [gt], thresholds=(0.01,))[0]
+    assert row["recall"] == 1.0 and row["precision"] == 1.0
