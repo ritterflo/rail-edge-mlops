@@ -90,6 +90,10 @@ def main() -> int:
     ap.add_argument("--max-steps", type=int, default=None)
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--num-workers", type=int, default=None)
+    # Overriding the seed is how the noise floor gets measured: identical config,
+    # different seed, and the spread across runs is the resolution below which no
+    # later comparison means anything.
+    ap.add_argument("--seed", type=int, default=None)
     ap.add_argument(
         "--limit-images", type=int, default=None, help="use only the first N training images"
     )
@@ -121,6 +125,7 @@ def main() -> int:
         ("max_steps", args.max_steps),
         ("batch_size", args.batch_size),
         ("num_workers", args.num_workers),
+        ("seed", args.seed),
     ):
         if value is not None:
             cfg[key] = value
