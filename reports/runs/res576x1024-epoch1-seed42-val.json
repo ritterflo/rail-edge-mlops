@@ -1,0 +1,98 @@
+{
+  "ap_per_class": {
+    "barrier": 0.2777,
+    "bicycle": 0.3013,
+    "bus": 0.2278,
+    "car": 0.3596,
+    "construction_vehicle": 0.0527,
+    "motorcycle": 0.2767,
+    "pedestrian": 0.2345,
+    "traffic_cone": 0.2669,
+    "trailer": 0.0006,
+    "truck": 0.2759
+  },
+  "calibration": {
+    "bins": [
+      {
+        "bin": "0.0-0.1",
+        "gap": -0.5125,
+        "mean_confidence": 0.0608,
+        "n": 86980,
+        "observed_precision": 0.5733
+      },
+      {
+        "bin": "0.1-0.2",
+        "gap": -0.74,
+        "mean_confidence": 0.1248,
+        "n": 14870,
+        "observed_precision": 0.8648
+      },
+      {
+        "bin": "0.2-0.3",
+        "gap": -0.7468,
+        "mean_confidence": 0.2234,
+        "n": 437,
+        "observed_precision": 0.9703
+      },
+      {
+        "bin": "0.3-0.4",
+        "gap": -0.5691,
+        "mean_confidence": 0.3198,
+        "n": 18,
+        "observed_precision": 0.8889
+      }
+    ],
+    "ece_same_predictions_only": 0.5466,
+    "n_measured": 102305,
+    "score_percentiles": {
+      "max": 0.3492,
+      "p50": 0.013,
+      "p90": 0.0278,
+      "p99": 0.0711
+    }
+  },
+  "map": 0.2274,
+  "map_50": 0.3428,
+  "map_75": 0.2365,
+  "map_large": 0.4907,
+  "map_medium": 0.279,
+  "map_small": 0.1021,
+  "operating_points": [
+    {
+      "detections_per_image": 65.063,
+      "precision": 0.09,
+      "recall": 0.8671,
+      "threshold": 0.02
+    },
+    {
+      "detections_per_image": 7.233,
+      "precision": 0.5242,
+      "recall": 0.5617,
+      "threshold": 0.05
+    },
+    {
+      "detections_per_image": 1.019,
+      "precision": 0.862,
+      "recall": 0.1302,
+      "threshold": 0.1
+    },
+    {
+      "detections_per_image": 0.166,
+      "precision": 0.9386,
+      "recall": 0.023,
+      "threshold": 0.15
+    },
+    {
+      "detections_per_image": 0.03,
+      "precision": 0.967,
+      "recall": 0.0043,
+      "threshold": 0.2
+    },
+    {
+      "detections_per_image": 0.001,
+      "precision": 0.8889,
+      "recall": 0.0002,
+      "threshold": 0.3
+    }
+  ]
+}

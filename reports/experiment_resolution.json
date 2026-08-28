@@ -1,0 +1,23 @@
+{
+  "caveat": "map_small/medium/large are NOT comparable across resolutions. COCO size buckets are absolute pixel areas on the resized image, and 576x1024 has 1.44x the pixels of 640x640, so objects migrate between buckets. The apparent map_medium regression is almost certainly migration. Overall mAP is the valid comparison.",
+  "cost": "1.44x the pixels: ~90 min/epoch against ~61, and the same factor on Jetson latency.",
+  "experiment": "input resolution 640x640 -> 576x1024 (height x width)",
+  "overall_map": {
+    "baseline_mean": 0.2098,
+    "baseline_sd": 0.0066,
+    "delta": 0.0176,
+    "new": 0.2274,
+    "sd_above_baseline": 2.7
+  },
+  "probe_curve": {
+    "1000": 0.2172,
+    "2000": 0.2431,
+    "3000": 0.2525,
+    "4000": 0.2475,
+    "5000": 0.2391,
+    "6000": 0.2366
+  },
+  "result": "adopted",
+  "second_finding": "Validation mAP peaks near step 3000 and declines 6% by 6127 while training loss keeps falling. One epoch overfits; training should stop near half an epoch or keep the best checkpoint rather than the last.",
+  "why": "640x640 scales 1600x900 by 0.400 horizontally and 0.711 vertically, so a 38x38 object becomes 15x27 -- smaller and reshaped. 576x1024 is 16:9 exactly and scales uniformly at 0.640, leaving it 24x24. Per-class gains land on pedestrian (+29% relative) and bicycle (+17%), the small thin objects the squash damages most."
+}
