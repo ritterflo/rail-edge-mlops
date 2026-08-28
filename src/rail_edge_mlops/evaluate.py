@@ -36,17 +36,34 @@ def _iou(box: torch.Tensor, others: torch.Tensor) -> torch.Tensor:
 
 
 def calibration(
-    predictions: list[dict], targets: list[dict], iou_threshold: float = 0.5, bins: int = 10
+    predictions: list[dict],
+    targets: list[dict],
+    iou_threshold: float = 0.5,
+    bins: int = 10,
+    top_k: int = 20,
 ) -> dict:
-    """Bin detections by score; compare mean score against observed hit rate."""
+    """Bin the top-K detections per image by score; compare score against hit rate.
+
+    Top-K per image rather than everything above a score threshold, deliberately. With a
+    fixed threshold the population being measured depends on where the score
+    distribution happens to sit -- three identical training runs produced 66,707,
+    68,452 and 113,386 detections above 0.05, and since ECE is a population-weighted
+    average over bins, its standard deviation across those runs was 0.135 against
+    mAP's 0.0066. That was measuring threshold placement, not calibration.
+
+    K=20 sits well above the 6.75 boxes/image in the ground truth and well below COCO's
+    conventional 100, which on this data would be mostly near-zero padding.
+    """
     scored: list[tuple[float, int]] = []
+    all_scores: list[float] = []
 
     for pred, gt in zip(predictions, targets, strict=True):
+        all_scores.extend(pred["scores"].tolist())
         gt_boxes, gt_labels = gt["boxes"], gt["labels"]
         claimed = torch.zeros(len(gt_boxes), dtype=torch.bool)
         # Greedy highest-score-first matching, mirroring how a consumer would read
         # these detections: the confident one gets the object.
-        for i in torch.argsort(pred["scores"], descending=True):
+        for i in torch.argsort(pred["scores"], descending=True)[:top_k]:
             box, label, score = pred["boxes"][i], pred["labels"][i], pred["scores"][i]
             eligible = (gt_labels == label) & ~claimed
             hit = 0
@@ -59,7 +76,7 @@ def calibration(
             scored.append((float(score), hit))
 
     if not scored:
-        return {"ece": 0.0, "n_detections": 0, "bins": []}
+        return {"ece": 0.0, "n_detections": 0, "bins": [], "score_percentiles": {}}
 
     edges = torch.linspace(0, 1, bins + 1)
     buckets = defaultdict(list)
@@ -87,7 +104,24 @@ def calibration(
             }
         )
 
-    return {"ece": round(ece, 4), "n_detections": total, "bins": rows}
+    # The compression is currently something you infer from bin populations. Reported
+    # directly, it is a number: if p99 sits near 0.2, no conventional threshold works.
+    st = torch.tensor(all_scores)
+    percentiles = (
+        {f"p{q}": round(float(torch.quantile(st, q / 100)), 4) for q in (50, 90, 99)}
+        if st.numel()
+        else {}
+    )
+    percentiles["max"] = round(float(st.max()), 4) if st.numel() else 0.0
+
+    return {
+        "ece": round(ece, 4),
+        "n_detections": total,
+        "top_k_per_image": top_k,
+        "n_detections_above_threshold": len(all_scores),
+        "score_percentiles": percentiles,
+        "bins": rows,
+    }
 
 
 @torch.no_grad()
