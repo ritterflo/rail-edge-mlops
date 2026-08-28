@@ -1,0 +1,179 @@
+{
+  "config": "epoch1 batch8 640x640 seeds 42/43/44",
+  "description": "Seed variance at the committed baseline config: RT-DETRv2-R18, 640x640, 1 epoch, batch 8. Every later comparison is read against these numbers -- a difference smaller than roughly 2 sd is not evidence.",
+  "metrics": {
+    "ece": {
+      "caveat": "Not usable for comparison. The score distribution is compressed near zero, so small shifts move huge numbers of detections across the fixed 0.05 threshold; detection counts ranged 66,707-113,386. Measure calibration over top-K detections per image instead.",
+      "mean": 0.5507,
+      "sd": 0.1346,
+      "spread": 0.2469,
+      "values": [
+        0.3963,
+        0.6432,
+        0.6126
+      ]
+    },
+    "map": {
+      "mean": 0.2098,
+      "sd": 0.0066,
+      "spread": 0.0115,
+      "values": [
+        0.2022,
+        0.2137,
+        0.2134
+      ]
+    },
+    "map_50": {
+      "mean": 0.3181,
+      "sd": 0.0063,
+      "spread": 0.0125,
+      "values": [
+        0.3117,
+        0.3184,
+        0.3242
+      ]
+    },
+    "map_75": {
+      "mean": 0.2189,
+      "sd": 0.0103,
+      "spread": 0.0185,
+      "values": [
+        0.207,
+        0.2255,
+        0.2242
+      ]
+    },
+    "map_large": {
+      "mean": 0.4931,
+      "sd": 0.01,
+      "spread": 0.0181,
+      "values": [
+        0.4865,
+        0.4883,
+        0.5046
+      ]
+    },
+    "map_medium": {
+      "mean": 0.302,
+      "sd": 0.0062,
+      "spread": 0.0109,
+      "values": [
+        0.2949,
+        0.3054,
+        0.3058
+      ]
+    },
+    "map_small": {
+      "mean": 0.0929,
+      "sd": 0.0042,
+      "spread": 0.0083,
+      "values": [
+        0.0886,
+        0.0933,
+        0.0969
+      ]
+    }
+  },
+  "per_class_ap": {
+    "barrier": {
+      "mean": 0.2652,
+      "sd": 0.0183,
+      "spread": 0.0366,
+      "values": [
+        0.2474,
+        0.284,
+        0.2641
+      ]
+    },
+    "bicycle": {
+      "mean": 0.2571,
+      "sd": 0.0153,
+      "spread": 0.0302,
+      "values": [
+        0.271,
+        0.2408,
+        0.2596
+      ]
+    },
+    "bus": {
+      "mean": 0.2294,
+      "sd": 0.0288,
+      "spread": 0.0539,
+      "values": [
+        0.241,
+        0.2506,
+        0.1967
+      ]
+    },
+    "car": {
+      "mean": 0.3501,
+      "sd": 0.0376,
+      "spread": 0.0745,
+      "values": [
+        0.3159,
+        0.3904,
+        0.3439
+      ]
+    },
+    "construction_vehicle": {
+      "mean": 0.0547,
+      "sd": 0.0067,
+      "spread": 0.0119,
+      "values": [
+        0.0505,
+        0.0513,
+        0.0624
+      ]
+    },
+    "motorcycle": {
+      "mean": 0.2905,
+      "sd": 0.0306,
+      "spread": 0.0606,
+      "values": [
+        0.2578,
+        0.2954,
+        0.3184
+      ]
+    },
+    "pedestrian": {
+      "mean": 0.1824,
+      "sd": 0.0078,
+      "spread": 0.0145,
+      "values": [
+        0.1857,
+        0.1735,
+        0.188
+      ]
+    },
+    "traffic_cone": {
+      "mean": 0.2421,
+      "sd": 0.013,
+      "spread": 0.0254,
+      "values": [
+        0.2278,
+        0.2532,
+        0.2453
+      ]
+    },
+    "trailer": {
+      "mean": 0.0012,
+      "sd": 0.0007,
+      "spread": 0.0012,
+      "values": [
+        0.0008,
+        0.002,
+        0.0008
+      ]
+    },
+    "truck": {
+      "mean": 0.225,
+      "sd": 0.0297,
+      "spread": 0.0593,
+      "values": [
+        0.224,
+        0.1958,
+        0.2551
+      ]
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "ap_per_class": {
+    "barrier": 0.284,
+    "bicycle": 0.2408,
+    "bus": 0.2506,
+    "car": 0.3904,
+    "construction_vehicle": 0.0513,
+    "motorcycle": 0.2954,
+    "pedestrian": 0.1735,
+    "traffic_cone": 0.2532,
+    "trailer": 0.002,
+    "truck": 0.1958
+  },
+  "calibration": {
+    "bins": [
+      {
+        "bin": "0.0-0.1",
+        "gap": -0.6259,
+        "mean_confidence": 0.0669,
+        "n": 61155,
+        "observed_precision": 0.6927
+      },
+      {
+        "bin": "0.1-0.2",
+        "gap": -0.8338,
+        "mean_confidence": 0.1168,
+        "n": 5545,
+        "observed_precision": 0.9506
+      },
+      {
+        "bin": "0.2-0.3",
+        "gap": -0.7915,
+        "mean_confidence": 0.2085,
+        "n": 7,
+        "observed_precision": 1.0
+      }
+    ],
+    "ece": 0.6432,
+    "n_detections": 66707
+  },
+  "map": 0.2137,
+  "map_50": 0.3184,
+  "map_75": 0.2255,
+  "map_large": 0.4883,
+  "map_medium": 0.3054,
+  "map_small": 0.0933
+}
