@@ -138,8 +138,14 @@ def evaluate(model, processor, loader, device, score_threshold: float = 0.05) ->
         sizes = torch.tensor(
             [[lbl["size"][0], lbl["size"][1]] for lbl in batch["labels"]], device=device
         )
+        # Post-process once with no score cut, then take two different views of it.
+        # Calibration needs an unfiltered population so top-K is the only thing
+        # selecting detections; mAP keeps the score threshold so it stays comparable
+        # with the recorded noise floor. Filtering first and capping second -- which is
+        # what a threshold plus top-K does -- leaves the population set by the
+        # threshold after all.
         results = processor.post_process_object_detection(
-            outputs, threshold=score_threshold, target_sizes=sizes
+            outputs, threshold=0.0, target_sizes=sizes
         )
 
         targets = []
@@ -158,7 +164,10 @@ def evaluate(model, processor, loader, device, score_threshold: float = 0.05) ->
             )
 
         cpu_preds = [{k: v.cpu() for k, v in r.items()} for r in results]
-        metric.update(cpu_preds, targets)
+        thresholded = [
+            {k: v[p["scores"] >= score_threshold] for k, v in p.items()} for p in cpu_preds
+        ]
+        metric.update(thresholded, targets)
         all_preds.extend(cpu_preds)
         all_targets.extend(targets)
 
