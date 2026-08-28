@@ -21,7 +21,7 @@ import yaml
 from torch.utils.data import DataLoader
 from transformers import AutoImageProcessor, AutoModelForObjectDetection
 
-from rail_edge_mlops import provenance
+from rail_edge_mlops import provenance, registry
 from rail_edge_mlops.data.categories import CLASS_TO_ID, DETECTION_CLASSES
 from rail_edge_mlops.data.dataset import CocoDetection, collate
 from rail_edge_mlops.evaluate import evaluate, summarise, write
@@ -284,7 +284,11 @@ def main() -> int:
             mlflow.log_dict(result, f"eval_{split}.json")
 
         mlflow.log_artifacts(str(args.out_dir / "model"), artifact_path="model")
-        print(f"\nrun: {mlflow.active_run().info.run_id}")
+        run_id = mlflow.active_run().info.run_id
+        print(f"\nrun: {run_id}")
+        if args.register:
+            version = registry.register(run_id)
+            print(f"registered {registry.MODEL_NAME} version {version}")
 
     return 0
 

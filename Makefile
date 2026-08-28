@@ -157,3 +157,11 @@ train: image  ## Fine-tune the detector (needs `make services-up`)
 train-smoke: image  ## 20 steps on a handful of images, to prove the loop runs
 	$(TRAIN_RUN) python3 -m rail_edge_mlops.train \
 		--experiment rtdetr-smoke --run-name smoke --allow-dirty $(ARGS)
+
+models:  ## List registry versions with their provenance
+	@docker run --rm --network rail-edge_default \
+		--user $(HOST_UID):$(HOST_GID) -e HOME=/tmp -e USER=$(HOST_USER) \
+		-e MLFLOW_TRACKING_URI=http://mlflow:5000 \
+		-v $(PWD):/workspace -w /workspace $(IMAGE) \
+		python3 -c "from rail_edge_mlops import registry; import json; \
+		print(json.dumps(registry.describe(), indent=2))"
