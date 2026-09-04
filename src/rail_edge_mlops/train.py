@@ -24,7 +24,7 @@ from transformers import AutoImageProcessor, AutoModelForObjectDetection
 from rail_edge_mlops import provenance, registry
 from rail_edge_mlops.data.categories import CLASS_TO_ID, DETECTION_CLASSES
 from rail_edge_mlops.data.dataset import CocoDetection, collate
-from rail_edge_mlops.evaluate import evaluate, summarise, write
+from rail_edge_mlops.evaluate import evaluate, run_metrics, summarise, write
 
 # DataLoader workers pass tensors between processes as file descriptors by default,
 # and the container's soft limit is 1024. Eight workers over thousands of batches
@@ -277,10 +277,7 @@ def main() -> int:
             result = evaluate(model, processor, loaders[split], device, cfg["score_threshold"])
             print(summarise(split, result))
             write(result, args.out_dir / f"eval_{split}.json")
-            mlflow.log_metrics(
-                {f"{split}.{k}": v for k, v in result.items() if isinstance(v, (int, float))}
-            )
-            mlflow.log_metric(f"{split}.ece", result["calibration"]["ece"])
+            mlflow.log_metrics(run_metrics(split, result))
             mlflow.log_dict(result, f"eval_{split}.json")
 
         mlflow.log_artifacts(str(args.out_dir / "model"), artifact_path="model")

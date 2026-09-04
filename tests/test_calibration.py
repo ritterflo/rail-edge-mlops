@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import torch
 
-from rail_edge_mlops.evaluate import calibration, operating_points
+from rail_edge_mlops.evaluate import calibration, operating_points, run_metrics
 
 
 def _sample(scores: list[float], hits: list[bool]):
@@ -110,3 +110,24 @@ def test_recall_is_bounded_by_ground_truth_not_detections():
     pred, gt = _sample([0.9] * 2, [True] * 2)
     row = operating_points([pred], [gt], thresholds=(0.01,))[0]
     assert row["recall"] == 1.0 and row["precision"] == 1.0
+
+
+# --- what gets logged must be what evaluate() returns -----------------------------
+
+
+def test_run_metrics_takes_its_keys_from_evaluate():
+    """Regression: the calibration headline was renamed and the logging call kept the old
+    key, so every run raised KeyError after the metrics and before the model artifacts --
+    the failure was invisible until a model turned out not to be in the registry."""
+    result = {
+        "map": 0.2,
+        "map_50": 0.3,
+        "ap_per_class": {"car": 0.4},
+        "calibration": calibration([], []),
+        "operating_points": [],
+    }
+    flat = run_metrics("val", result)
+    assert flat["val.map"] == 0.2
+    assert flat["val.map_50"] == 0.3
+    assert flat["val.ece_same_predictions_only"] == 0.0
+    assert "val.ap_per_class" not in flat

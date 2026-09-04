@@ -4,8 +4,8 @@ A closed-loop MLOps pipeline for edge object detection: train on an AMD GPU, dep
 NVIDIA Jetson AGX Orin, replay real driving video through it, and detect input/output drift in
 operation — with every promotion gated by an on-device acceptance test.
 
-> **Status: early.** Phase 0 (reproducible foundation) in progress. Nothing here is finished yet;
-> the commit history is the point as much as the result.
+> **Status: early.** P0 and P1 are done; P2 (edge deployment) is in progress. The commit
+> history is the point as much as the result.
 
 ## Why this exists
 
@@ -22,7 +22,7 @@ explicit model handoff contract and a real acceptance gate, which is the piece w
 ## Architecture
 
 ```
-  TRAINING HOST (x86, Radeon RX 7900 XT / ROCm)        EDGE (Jetson AGX Orin 32GB / JetPack 6.2)
+  TRAINING HOST (x86, Radeon RX 7900 XT / ROCm)        EDGE (Jetson AGX Orin 32GB / JetPack 7.2)
   ─────────────────────────────────────────────        ──────────────────────────────────────────
   nuImages ─► DVC ──► train (PyTorch/ROCm)             CI runner on device
                           │                                  │
@@ -66,12 +66,12 @@ accuracy drop.
 | Role | Machine |
 |---|---|
 | Training | Radeon RX 7900 XT (gfx1100, 20 GB), ROCm |
-| Edge | Jetson AGX Orin 32 GB, JetPack 6.2 (L4T 36.4.3), Syslogic carrier |
+| Edge | Jetson AGX Orin 32 GB on a Seeed Studio H01 carrier, JetPack 7.2 (L4T 39.2), TensorRT 10.16 |
 
 ## Roadmap
 
 - [x] **P0** — reproducible foundation: pinned env, DVC-tracked data, MLflow, split policy
-- [ ] **P1** — baseline training on ROCm + evaluation harness
+- [x] **P1** — baseline training on ROCm + evaluation harness
 - [ ] **P2** — ONNX handoff contract, on-device TensorRT build, parity gate
 - [ ] **P3** — Triton serving + RTSP replay + metrics
 - [ ] **P4** — drift detection + induced-drift demonstration

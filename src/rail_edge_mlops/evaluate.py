@@ -258,6 +258,17 @@ def summarise(name: str, result: dict) -> str:
     return "\n".join(lines)
 
 
+def run_metrics(split: str, result: dict) -> dict[str, float]:
+    """The scalar view of an `evaluate()` result, named `<split>.<key>` for MLflow.
+
+    The ECE is logged under its full name rather than `ece`: the name carries the caveat
+    that it only compares before and after a recalibration on the same predictions.
+    """
+    flat = {f"{split}.{k}": v for k, v in result.items() if isinstance(v, (int, float))}
+    flat[f"{split}.ece_same_predictions_only"] = result["calibration"]["ece_same_predictions_only"]
+    return flat
+
+
 def write(result: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")

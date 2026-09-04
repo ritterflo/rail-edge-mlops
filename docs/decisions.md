@@ -124,3 +124,15 @@ and the drift results in P4 are only falsifiable if the noise floor is known.
 
 *Escape hatch:* for any model that gets deployed and quoted, `docker save` the image and store it
 beside the model. Recipes rot; tarballs don't.
+
+### Seeed H01 and JetPack 7.2, not Syslogic and 6.2 (2026-09-04)
+
+The edge board changed to a Seeed Studio H01 carrier, and it arrived flashed with JetPack 7.2
+(L4T 39.2), which Seeed lists as supported. Staying on it costs nothing today; downgrading to
+6.2 to match the plan would cost a reflash to get back to a version the plan only chose because
+it was current.
+
+*Accepted:* JetPack 7 is the newest line, so prebuilt containers and third-party recipes (Triton
+images, `jetson-containers`) lag behind it — P3 may have to build more itself. And the stock
+devkit device tree is in use rather than Seeed's peripheral package, which leaves the second
+Ethernet port and the PCIe slots unverified. Neither is needed before P3.

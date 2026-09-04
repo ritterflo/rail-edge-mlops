@@ -50,8 +50,15 @@ Input shape comes from `params.yaml:train.image_size`, not a constant — the re
 experiment may change it to 1024x576, and the shape belongs in configuration regardless.
 
 ### 2 · Jetson prerequisites
-Flash JetPack 6.2 (L4T 36.4.3) from the Syslogic BSP for the AGX Orin 32GB. Register the
-board as a self-hosted runner labelled `jetson`. Verify TensorRT 10.3.
+The board is a Seeed Studio H01 carrier with the AGX Orin 32GB module, already flashed with
+JetPack 7.2 (L4T 39.2), which Seeed lists as supported — so no reflash, and the JetPack 6.2 /
+Syslogic assumption this plan was written against is gone. What remains: install the JetPack
+userspace (`nvidia-jetpack`, which brings CUDA 13.2 and TensorRT 10.16), Docker, and register
+the board as a self-hosted runner labelled `jetson`.
+
+The stock devkit device tree is in use rather than Seeed's peripheral package. The Ethernet
+port on the MGBE controller works and that is all this phase needs; the second port and the
+PCIe slots are unverified and only matter if an NVMe or a second NIC is ever wanted.
 
 Note the runner hardening already established for the x86 runner applies here too: a
 dedicated unprivileged user, and the fork-PR guard in the workflow.
